@@ -64,10 +64,10 @@ romfs --bfshader assets--> game.bfap        (models, materials with prebuilt uni
 
 Owl is built to sit inside BfresStudio, where users open their own modded `.bfres` files as well as the game's.
 
-- **A model has one in-memory form** (`ModelData`: shapes, skeleton, materials, textures). The pack reader produces it from a `ModelRecord`,
-  and a **model converter** produces it from a `BfresSharp.ResFile`. The converter is BfShaderSharp's importer (`ModelImporter`,
-  `MaterialImporter`, `ShapeImporter`) run in memory, so a modded file and a dump file are imported by the same code and the renderer cannot
-  tell them apart. Textures a modded model brings are `BntxFile`s turned into the same texture data.
+- **A modded model is prepared like a dump model.** BfShaderSharp's `ModelAssetPreparer` (CLI `bfshader model`) runs the same importers on one `.bfres`
+  plus its textures, against the user's own romfs for shader programs and for textures the mod does not bring, and writes a small pack of its own.
+  The renderer opens it beside the game's pack and cannot tell a modded model from a dump one. Materials always name a real game shading model
+  and program, so there is no 'program missing' case to design for. Textures the mod brings (given files or BNTX embedded in the `.bfres`) win over the romfs.
 - **A mod can name things the pack lacks**: a material option combination the game never compiled, a shading model that is missing, a
   texture that is not in the pack. Program selection uses the nearest-program lookup, a missing texture is the pack's neutral texture,
   and each fallback is reported through `IRenderDiagnostics` so the studio can show it.
