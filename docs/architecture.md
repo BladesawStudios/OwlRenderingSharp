@@ -60,6 +60,23 @@ romfs --bfshader assets--> game.bfap        (models, materials with prebuilt uni
   are decoded and uploaded on a worker and the GL thread only swaps the handle in, within a per-frame upload budget.
 - **Animation** is evaluated on the CPU into a bone palette per actor per frame, in parallel across actors.
 
+## Modded models and distribution
+
+Owl is built to sit inside BfresStudio, where users open their own modded `.bfres` files as well as the game's.
+
+- **A model has one in-memory form** (`ModelData`: shapes, skeleton, materials, textures). The pack reader produces it from a `ModelRecord`,
+  and a **model converter** produces it from a `BfresSharp.ResFile`. The converter is BfShaderSharp's importer (`ModelImporter`,
+  `MaterialImporter`, `ShapeImporter`) run in memory, so a modded file and a dump file are imported by the same code and the renderer cannot
+  tell them apart. Textures a modded model brings are `BntxFile`s turned into the same texture data.
+- **A mod can name things the pack lacks**: a material option combination the game never compiled, a shading model that is missing, a
+  texture that is not in the pack. Program selection uses the nearest-program lookup, a missing texture is the pack's neutral texture,
+  and each fallback is reported through `IRenderDiagnostics` so the studio can show it.
+- **Nothing derived from the game is shipped.** The `.bfap` and `.bfsp` are generated on the user's machine from their own game dump, by a
+  first-run step the host runs (`AssetPreparer` and `ArchivePreparer`, with progress). What may be shipped is the **game profile JSON**:
+  the file that says where a game's files are, which parameter files configure a frame, and which uniform block layouts apply. A profile
+  holds our own findings (names, offsets, evidence), no game code, shaders or textures.
+- The renderer's own GLSL is ours and ships. Decompiled game shaders are generated and never committed or packaged.
+
 ## The frame graph
 
 A pass is a class with a `Declare` method and an `Execute` method.
