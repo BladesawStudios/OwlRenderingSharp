@@ -44,3 +44,9 @@ The colour programs write alpha and leave the cutout to the hardware alpha test 
 `agl/DirectionalLightParam/dir_chara` is a white light of intensity 21.5 in view coordinates (direction 0, -0.62, 0.79) in group `main_env`, against `dir_main` 41.3 in world space; characters are probably lit by a camera-relative key light like this one rather than by the sun alone. The palette's `CharaLightIntensity` and `FieldObjCharaLightIntensity` are the probable multipliers.
 
 In Kokiri Forest at noon `CharaLightIntensity` is 0, so that light would not contribute there; it is left unapplied.
+
+## Screen-space occlusion, compute passes (status)
+
+- `GpuComputePass` / `ShaderComputePass` dispatch the game's compute programs (`cp_` blocks and samplers are read by `ProgramBindings`). They are not used for the SSAO chain yet: the Detect/Bilateral/Gaussian parameter blocks (656/144/16 bytes) are only partly decoded and the engine code that fills them (`FUN_7100db6e70` area in the game binary, string `ssao_parameter`) was not traced to values.
+- `AmbientOcclusionPass` is this library's stand-in (depth-ring taps, multiplied onto the lit image, `--ao <strength> --ao-radius <m>` in the snapshot sample). It is not the game's look and darkens direct light too.
+- Depth of field (MainField focal distance 50, range 50) and the fog volumes (neutral black in KokiriForest noon) are no-ops for a lone character, so nothing is applied. Skin scattering is not a post pass (`skin_shading_scatter` has no real stage).

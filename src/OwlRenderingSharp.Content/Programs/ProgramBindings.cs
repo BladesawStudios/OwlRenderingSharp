@@ -77,9 +77,9 @@ public sealed partial class ProgramBindings
     private static int SlotOfSampler(string glslName) =>
         SamplerName().Match(glslName) is { Success: true } m ? (Convert.ToInt32(m.Groups[1].Value, 16) - FirstSamplerHandle) / 2 : throw new BfShaderFormatException($"{glslName} is not a sampler name");
 
-    [GeneratedRegex(@"^_[vf]p_c(\d+)$")]
+    [GeneratedRegex(@"^_[vfc]p_c(\d+)$")]
     private static partial Regex BlockName();
 
-    [GeneratedRegex(@"^[vf]p_t_tcb_([0-9A-Fa-f]+)$")]
+    [GeneratedRegex(@"^[vfc]p_t_tcb_([0-9A-Fa-f]+)$")]
     private static partial Regex SamplerName();
 }

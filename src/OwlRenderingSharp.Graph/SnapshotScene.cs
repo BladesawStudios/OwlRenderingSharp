@@ -6,13 +6,16 @@ namespace OwlRenderingSharp.Graph;
 /// <remarks>
 /// With a <see cref="ShadowMap"/> the model first casts into its cascades from the sun (<see cref="ToSun"/>, out to <see cref="ShadowDistance"/>) and the colour pass reads them.
 /// <see cref="Textures"/> are frame textures by sampler name, such as a <see cref="SkyProbe"/>'s cube; the shadow map's own texture is added to them.
+/// A positive <see cref="OcclusionStrength"/> darkens the drawn image where geometry crowds it, within <see cref="OcclusionRadius"/> metres (<see cref="AmbientOcclusionPass"/>).
 /// </remarks>
 public sealed record SnapshotScene(
     Matrix4x4? Placement = null,
     ShadowMap? Shadows = null,
     Vector3 ToSun = default,
     float ShadowDistance = 50f,
-    IReadOnlyDictionary<string, FrameTexture>? Textures = null)
+    IReadOnlyDictionary<string, FrameTexture>? Textures = null,
+    float OcclusionStrength = 0f,
+    float OcclusionRadius = 0.15f)
 {
     public FrameInfo Frame(Camera camera, int width, int height)
     {

@@ -66,11 +66,17 @@ public static class ModelSnapshot
         if (prepass is not null) textures[ShadowPrepass.SamplerName] = prepass.Texture;
         scene = scene with { Textures = textures };
         using GpuTexture depth = new(device, "snapshot depth", GpuFormat.Depth32F, width, height);
-        using GpuFramebuffer target = new(device, "snapshot", [color], depth);
+        bool occlude = scene.OcclusionStrength > 0f;
+        using GpuTexture? unoccluded = occlude ? new GpuTexture(device, "snapshot unoccluded", color.Format, width, height) : null;
+        using GpuFramebuffer target = new(device, "snapshot", [unoccluded ?? color], depth);
         commands.UseZeroToOneDepth();
         commands.Target(target, width, height);
         commands.Clear(background.X, background.Y, background.Z, background.W);
         drawer.Draw(model, scene.Frame(camera, width, height), world);
+        if (!occlude) return;
+        using GpuFramebuffer occluded = new(device, "snapshot occluded", [color]);
+        using AmbientOcclusionPass pass = new(device);
+        pass.Run(unoccluded!, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, occluded);
         device.Check("ModelSnapshot.Render", model.Name);
     }
 
