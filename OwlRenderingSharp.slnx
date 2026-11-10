@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OwlRenderingSharp.Core/OwlRenderingSharp.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OwlRenderingSharp.Core.Tests/OwlRenderingSharp.Core.Tests.csproj" />
+  </Folder>
+</Solution>
