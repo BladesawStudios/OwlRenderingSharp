@@ -32,6 +32,9 @@ public sealed class ShadowMap : IDisposable
 
     public int Resolution { get; }
 
+    /// <summary>The GL handle of the depth array, for passes that read it directly.</summary>
+    public uint DepthHandle => _depth.Handle;
+
     public IReadOnlyList<ShadowCascade> Cascades { get; private set; } = [];
 
     public void Render(Camera viewer, float aspect, Vector3 toSun, float shadowDistance, Action<FrameInfo> drawCasters)

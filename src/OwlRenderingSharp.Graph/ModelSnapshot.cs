@@ -44,16 +44,37 @@ public static class ModelSnapshot
     {
         scene ??= new SnapshotScene();
         int width = color.Width, height = color.Height;
+        Matrix4x4 world = scene.Placement ?? Matrix4x4.Identity;
+        GpuCommands commands = new(device);
+        using ShadowPrepass? prepass = scene.Shadows is null ? null : CastShadows(device, drawer, model, camera, color, scene, world, commands);
+        if (prepass is not null) scene = scene with { Textures = new Dictionary<string, FrameTexture>(scene.Textures ?? new Dictionary<string, FrameTexture>()) { [ShadowPrepass.SamplerName] = prepass.Texture } };
         using GpuTexture depth = new(device, "snapshot depth", GpuFormat.Depth32F, width, height);
         using GpuFramebuffer target = new(device, "snapshot", [color], depth);
-        GpuCommands commands = new(device);
-        Matrix4x4 world = scene.Placement ?? Matrix4x4.Identity;
-        scene.Shadows?.Render(camera, (float)width / height, scene.ToSun, scene.ShadowDistance, light => drawer.Draw(model, light, world, PassPlan.Shadow));
         commands.UseZeroToOneDepth();
         commands.Target(target, width, height);
         commands.Clear(background.X, background.Y, background.Z, background.W);
         drawer.Draw(model, scene.Frame(camera, width, height), world);
         device.Check("ModelSnapshot.Render", model.Name);
+    }
+
+    // Renders the cascades from the sun, then a depth image of the view, and resolves the screen-space shadow mask from the two.
+    private static ShadowPrepass CastShadows(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, SnapshotScene scene, Matrix4x4 world, GpuCommands commands)
+    {
+        ShadowMap shadows = scene.Shadows!;
+        int width = color.Width, height = color.Height;
+        shadows.Render(camera, (float)width / height, scene.ToSun, scene.ShadowDistance, light => drawer.Draw(model, light, world, PassPlan.Shadow));
+        using GpuTexture viewDepth = new(device, "snapshot view depth", GpuFormat.Depth32F, width, height);
+        using (GpuFramebuffer depthTarget = new(device, "snapshot view depth", [color], viewDepth))
+        {
+            commands.UseZeroToOneDepth();
+            commands.Target(depthTarget, width, height);
+            commands.Clear(0f, 0f, 0f, 0f);
+            drawer.Draw(model, new FrameInfo(camera, width, height), world, new PassPlan([RenderPass.ZPrepass]));
+        }
+
+        ShadowPrepass prepass = new(device, width, height);
+        prepass.Resolve(viewDepth, camera, shadows);
+        return prepass;
     }
 
     private static T[] TopRowFirst<T>(T[] pixels, int width, int height)

@@ -4,7 +4,7 @@ namespace OwlRenderingSharp.Gpu;
 
 /// <summary>A fragment program drawn over a whole target with a single triangle, for post-processing.</summary>
 /// <remarks>
-/// The vertex stage is built in; the caller supplies the fragment source, which reads its inputs from <c>sampler2D</c>s at binding 0, 1, ... in the order given to <see cref="Run"/>, and
+/// The vertex stage is built in; the caller supplies the fragment source, which reads its inputs from <c>sampler2D</c>s at binding 0, 1, ... in the order given to <c>Run</c>, and
 /// may read a uniform block declared at binding 0. The pass draws without culling, depth or blending and sets the viewport to the target. Inputs are sampled with a clamped linear sampler.
 /// </remarks>
 public sealed class GpuScreenPass : IDisposable
@@ -27,7 +27,10 @@ public sealed class GpuScreenPass : IDisposable
 
     public string Name { get; }
 
-    public void Run(GpuFramebuffer target, IReadOnlyList<GpuTexture> inputs, GpuBuffer? parameters = null)
+    public void Run(GpuFramebuffer target, IReadOnlyList<GpuTexture> inputs, GpuBuffer? parameters = null) => Run(target, [.. inputs.Select(i => i.Handle)], parameters);
+
+    /// <summary>The same with GL texture handles as inputs, for textures that are not 2D colour textures (such as a depth array read with <c>texelFetch</c>).</summary>
+    public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, GpuBuffer? parameters = null)
     {
         GL gl = _device.Gl;
         _device.Apply(new DrawState(CullMode.None, false, false, DepthFunc.Always, BlendState.Off));
@@ -36,7 +39,7 @@ public sealed class GpuScreenPass : IDisposable
         gl.UseProgram(_program.Handle);
         for (int i = 0; i < inputs.Count; i++)
         {
-            gl.BindTextureUnit((uint)i, inputs[i].Handle);
+            gl.BindTextureUnit((uint)i, inputs[i]);
             gl.BindSampler((uint)i, _sampler.Handle);
         }
 
