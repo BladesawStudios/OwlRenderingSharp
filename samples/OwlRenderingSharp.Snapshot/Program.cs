@@ -169,7 +169,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         (Vector3 shSky, _) = OotLights.ProbeSky(profile.Environment, 0f, float.Parse(Option("--sky-cool") ?? "0.7"));
         (_, Vector3 shGround) = OotLights.SkyColors(profile.Environment);
         float shScale = float.Parse(Option("--sh-scale") ?? "1");
-        Vector3 up = shSky * float.Parse(Option("--sky-scale") ?? "0.6") * shScale, down = shGround * float.Parse(Option("--ground-scale") ?? "0.25") * shScale;
+        Vector3 up = shSky * float.Parse(Option("--sky-scale") ?? "1") * shScale, down = shGround * float.Parse(Option("--ground-scale") ?? "0.25") * shScale;
         float[] shEntry = ShProbe.Entry(ShProbe.Project(d => SkyProbe.Blend(up, down, d)));
         drawer.SetLightProbes(shEntry);
     }
@@ -184,7 +184,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     Vector3 toSun = OotLights.ToSun(profile.Environment);
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
     (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "5"), float.Parse(Option("--sky-cool") ?? "0.7"));
-    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "0.6"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun);
+    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "1"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun);
     SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), Overrides(device, probe?.Textures), float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
     Vector4 background = new(0f, 0f, 0f, 1f);
     using GamePostChain? chain = Option("--post-shaders") is null || args.Contains("--plain-post") ? null : new GamePostChain(services);

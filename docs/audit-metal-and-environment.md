@@ -18,3 +18,14 @@ Findings from rendering the Master Sword and Hylian Shield against a Temple of T
 1. Decode what drives the blade's surface graph (the fragment of program 12366 around the `_m0` matcap read and the `fp_c5.data[12]` and `[18]` terms).
 2. Read `.bkprb` and `.bklight` so the probes and light volumes are real.
 3. Bind the light-table SSBOs with at least the character light (`dir_chara`) as the game stores it.
+
+## Update: the blade was the wrong program
+
+The Master Sword blade (`Blade_Mark`, material program 13086) was drawn with program 12366, which has metalness and occlusion off and an emission/overwrite surface. The material file says
+`ns_enable_shadow_pre_pass=0` and the standalone options force it, but the only program with the blade's metalness has it on; the selector weighed that forced option (100) above the six options
+12366 differed on (16 each), so it picked the wrong program. The option is now weighed least in `PassProgramSelector`, and the blade and its coat resolve to 13086 and 5382. The blade is brushed
+steel with its engraving. Other mismatches in the characters (`8334` to `8343` and similar) differ only in skin weight count, as they should.
+
+Also changed: the three point lights the hair and skin programs read (slots 7/8, 86/87, 71/72) are a camera-fixed key, fill and rim rig; the Kokiri palette's yellow hemisphere top is
+replaced with white by default in the snapshot sample (`--palette-sky` keeps it); the reflection probe's sky scale defaults to 1; and a light-probe SH entry is bound to the first storage buffer.
+Still open: the baked probe files, the clustered light buffers and the sampler defaults the game fills from earlier passes.
