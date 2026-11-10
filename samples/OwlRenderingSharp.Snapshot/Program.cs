@@ -86,7 +86,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
                 var layoutRecord = services.Content.UniformLayout(record.Layout);
                 Console.WriteLine($"  block {block.Length} bytes, layout {layoutRecord.Name} {layoutRecord.Size}");
                 foreach (var u in layoutRecord.Uniforms.OrderBy(u => u.Offset))
-                    Console.WriteLine($"    @{u.Offset} (slot {u.Offset / 16}.{u.Offset % 16 / 4}) {u.Name} = {(u.Offset + 4 <= block.Length ? System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(block.AsSpan(u.Offset)) : float.NaN)}");
+                    Console.WriteLine($"    @{u.Offset} (slot {u.Offset / 16}.{u.Offset % 16 / 4}) {u.Name} = {string.Join(",", Enumerable.Range(0, 4).Select(k => u.Offset + 4 * k + 4 <= block.Length ? System.Buffers.Binary.BinaryPrimitives.ReadSingleLittleEndian(block.AsSpan(u.Offset + 4 * k)).ToString("0.###") : "-"))}");
             }
 
             foreach (var prm in Array.Empty<ParamRecord>())
@@ -100,8 +100,8 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     if (Option("--texture") is { } texName && services.Content.FindTexture(texName) is { } texRecord)
     {
         var decoded = services.Content.DecodeTexture(texRecord);
-        Console.WriteLine($"{texName}: format {texRecord.Format:X} {decoded.Width}x{decoded.Height} {decoded.Encoding} mips {decoded.MipCount}");
-        if (decoded.Encoding is TextureEncoding.Rgba8 or TextureEncoding.Rgba8Srgb) PngWriter.Write(Option("--texture-out") ?? "texture.png", decoded.Width, decoded.Height, decoded.Levels[0]);
+        Console.WriteLine($"{texName}: format {texRecord.Format:X} {decoded.Width}x{decoded.Height} {decoded.Encoding} mips {decoded.MipCount} channels {texRecord.Channels:X8}");
+        if (decoded.Encoding is TextureEncoding.Rgba8 or TextureEncoding.Rgba8Srgb) PngWriter.Write(Option("--texture-out") ?? "texture.png", decoded.Width, decoded.Height, decoded.Levels[0], true);
     }
 
     if (args.Contains("--attribs"))
@@ -173,9 +173,9 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     using ShadowMap? shadows = args.Contains("--shadow") ? new ShadowMap(services, int.Parse(Option("--shadow-size") ?? "2048")) : null;
     Vector3 toSun = OotLights.ToSun(profile.Environment);
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
-    (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "1"), float.Parse(Option("--sky-cool") ?? "0.7"));
-    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky, ground, sun);
-    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), probe?.Textures, float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
+    (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "5"), float.Parse(Option("--sky-cool") ?? "0.7"));
+    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "0.6"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun);
+    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), Overrides(device, probe?.Textures), float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
     Vector4 background = new(0f, 0f, 0f, 1f);
     using GamePostChain? chain = Option("--post-shaders") is null || args.Contains("--plain-post") ? null : new GamePostChain(services);
     byte[] image = args.Contains("--raw")
@@ -191,6 +191,23 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         }
 
     return image;
+}
+
+// --override name=value (0..1 grey) replaces a model sampler with a one-colour texture, to see what the sampler contributes.
+IReadOnlyDictionary<string, FrameTexture>? Overrides(GpuDevice device, IReadOnlyDictionary<string, FrameTexture>? baseTextures)
+{
+    Dictionary<string, FrameTexture> all = baseTextures is null ? [] : new(baseTextures);
+    foreach (string set in args.Where((a, i) => i > 0 && args[i - 1] == "--override"))
+    {
+        string[] parts = set.Split('=');
+        byte level = (byte)(float.Parse(parts[1]) * 255f);
+        GpuTexture texture = new(device, parts[0], GpuFormat.Rgba8, 4, 4);
+        texture.Upload<byte>([.. Enumerable.Repeat(level, 64)]);
+        GpuSampler sampler = new(device, parts[0], SamplerState.LinearClamp);
+        all[parts[0]] = new FrameTexture(texture.Handle, sampler.Handle);
+    }
+
+    return all.Count == 0 ? null : all;
 }
 
 // With --romfs and --place the lighting is the place's palette at the given time of day; otherwise a neutral environment.
