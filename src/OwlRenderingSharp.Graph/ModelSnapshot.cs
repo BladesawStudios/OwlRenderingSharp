@@ -17,11 +17,33 @@ public static class ModelSnapshot
     public static float[] RenderHdr(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null) =>
         Draw(device, drawer, model, camera, width, height, background, scene, GpuFormat.Rgba16F, t => t.DownloadAsFloats());
 
+    /// <summary>Draws at <paramref name="supersample"/> times the size, tone maps and averages down to the requested size, then smooths the edges with <see cref="FxaaPass"/> unless <paramref name="fxaa"/> is off.</summary>
+    public static byte[] RenderSmooth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null, float exposure = 0.25f, int supersample = 2, bool fxaa = true)
+    {
+        using GpuTexture hdr = new(device, "snapshot hdr", GpuFormat.Rgba16F, width * supersample, height * supersample);
+        DrawInto(device, drawer, model, camera, hdr, background, scene);
+        using GpuTexture resolved = new(device, "snapshot resolved", GpuFormat.Rgba8, width, height);
+        using GpuFramebuffer resolvedTarget = new(device, "snapshot resolved", [resolved]);
+        using (ResolvePass resolve = new(device)) resolve.Run(hdr, supersample, exposure, resolvedTarget);
+        if (!fxaa) return TopRowFirst(resolved.Download<byte>(), width, height);
+        using GpuTexture smoothed = new(device, "snapshot smoothed", GpuFormat.Rgba8, width, height);
+        using GpuFramebuffer smoothedTarget = new(device, "snapshot smoothed", [smoothed]);
+        using (FxaaPass pass = new(device)) pass.Run(resolved, smoothedTarget);
+        return TopRowFirst(smoothed.Download<byte>(), width, height);
+    }
+
     private static T[] Draw<T>(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene, GpuFormat format, Func<GpuTexture, T[]> read)
         where T : unmanaged
     {
-        scene ??= new SnapshotScene();
         using GpuTexture color = new(device, "snapshot color", format, width, height);
+        DrawInto(device, drawer, model, camera, color, background, scene);
+        return TopRowFirst(read(color), width, height);
+    }
+
+    private static void DrawInto(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, Vector4 background, SnapshotScene? scene)
+    {
+        scene ??= new SnapshotScene();
+        int width = color.Width, height = color.Height;
         using GpuTexture depth = new(device, "snapshot depth", GpuFormat.Depth32F, width, height);
         using GpuFramebuffer target = new(device, "snapshot", [color], depth);
         GpuCommands commands = new(device);
@@ -32,7 +54,6 @@ public static class ModelSnapshot
         commands.Clear(background.X, background.Y, background.Z, background.W);
         drawer.Draw(model, scene.Frame(camera, width, height), world);
         device.Check("ModelSnapshot.Render", model.Name);
-        return TopRowFirst(read(color), width, height);
     }
 
     private static T[] TopRowFirst<T>(T[] pixels, int width, int height)

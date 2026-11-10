@@ -166,7 +166,9 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     Vector4 background = new(0.2f, 0.3f, 0.4f, 1f);
     byte[] image = args.Contains("--raw")
         ? ModelSnapshot.Render(device, drawer, shown, camera, width, height, background, scene)
-        : FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"));
+        : args.Contains("--plain")
+            ? FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"))
+            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, float.Parse(Option("--exposure") ?? "0.25"), int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"));
     if (shadows is not null)
         for (int c = 0; c < shadows.Cascades.Count; c++)
         {
