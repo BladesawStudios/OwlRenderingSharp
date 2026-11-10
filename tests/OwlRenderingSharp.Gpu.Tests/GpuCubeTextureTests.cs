@@ -18,6 +18,27 @@ public class GpuCubeTextureTests(GlFixture gl)
     }
 
     [SkippableFact]
+    public void AFloatCubeKeepsLightAboveOneAndBuildsItsMips()
+    {
+        gl.Require().Run(device =>
+        {
+            float[] face = Enumerable.Range(0, 4 * 4).SelectMany(_ => new[] { 3f, 2f, 1f, 1f }).ToArray();
+            using GpuCubeTexture cube = new(device, "float cube", 4, Enumerable.Repeat(face, 6).ToArray());
+            Assert.Equal(3, cube.Levels);
+            float[] last = new float[4];
+            device.Gl.GetTextureSubImage(cube.Handle, 2, 0, 0, 0, 1, 1, 1, PixelFormat.Rgba, PixelType.Float, 16, new Span<float>(last));
+            Assert.Equal(3f, last[0], 0.01f);
+            Assert.Equal(2f, last[1], 0.01f);
+        });
+    }
+
+    [SkippableFact]
+    public void AFloatCubeNeedsFacesOfTheRightSize()
+    {
+        gl.Require().Run(device => Assert.Throws<GpuException>(() => new GpuCubeTexture(device, "bad cube", 4, Enumerable.Repeat(new float[8], 6).ToArray())));
+    }
+
+    [SkippableFact]
     public void ACubeNeedsSixFaces()
     {
         gl.Require().Run(device =>

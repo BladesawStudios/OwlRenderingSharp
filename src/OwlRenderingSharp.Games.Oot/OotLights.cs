@@ -1,6 +1,7 @@
 using System.Numerics;
 using OwlRenderingSharp.Blocks;
 using OwlRenderingSharp.Content.Palettes;
+using OwlRenderingSharp.Graph;
 
 namespace OwlRenderingSharp.Games.Oot;
 
@@ -63,6 +64,7 @@ public static class OotLights
         writer.Set("SkinRamp", new Vector4(1f, 0f, 0f, 1f));
         writer.Set("SkinScales", Vector4.One).Set("SurfaceScales", new Vector4(1f, 1f, 1f, 0f)).Set("SpecularScales", Vector4.One);
         writer.Set("DepthLimit", new Vector4(float.MaxValue, 0f, 0f, 0f));
+        writer.Set("ReflectionLod", new Vector4(SkyProbe.MipLevels - 1, 0f, 0f, 0f));
     }
 
     // The unit vector from the scene toward the sun, in world space.
