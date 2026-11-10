@@ -41,6 +41,17 @@ public class OotBlockProfileTests
     }
 
     [Fact]
+    public void TheEnvironmentAddressesTheFogVolumesOverTheCamerasDepthRange()
+    {
+        Camera camera = new() { NearPlane = 0.5f, FarPlane = 50f };
+        BlockWriter writer = new(_profile.Layout("gsys_environment", null)!);
+        _profile.Fill("gsys_environment", writer, new FrameInfo(camera, 64, 64), null);
+        Assert.Equal(0.5f, writer.GetVector4("FroxelNearFar").X);
+        Assert.Equal(50f, writer.GetVector4("FroxelNearFar").Y);
+        Assert.Equal(Vector4.One.X, writer.GetVector4("FroxelScale").X);
+    }
+
+    [Fact]
     public void TheShapeBlockCarriesThePlacementTranslation()
     {
         ShapeInfo shape = Shape(Matrix4x4.CreateTranslation(1, 2, 3));

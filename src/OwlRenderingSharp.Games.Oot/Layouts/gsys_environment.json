@@ -63,6 +63,30 @@
       "evidence": "Slot 61 .xy: ((x term) - .x) * .y clamped, a light ramp."
     },
     {
+      "name": "ProbeFlags",
+      "offset": 1024,
+      "type": "Vector4",
+      "evidence": "Slot 64 zw: compared with zero and tested with isnan to switch the probe paths; zero turns them off."
+    },
+    {
+      "name": "ProbeColor",
+      "offset": 1040,
+      "type": "Vector4",
+      "evidence": "Slot 65 xyz: copied into colour-like temporaries before the ambient terms."
+    },
+    {
+      "name": "ProbeBoxScale",
+      "offset": 1056,
+      "type": "Vector4",
+      "evidence": "Slot 66 xyz: fma(position, z, 1), and the negated y, fma(position, x, -y): a scale and offset of a position, the probe box."
+    },
+    {
+      "name": "ProbeOffsetSecond",
+      "offset": 1072,
+      "type": "Vector4",
+      "evidence": "Slot 67 w: the same shape as slot 112 w (fma(direction, w, position)), used by the second probe."
+    },
+    {
       "name": "AmbientScale",
       "offset": 1088,
       "type": "Vector4",
@@ -171,10 +195,34 @@
       "evidence": "Slot 93 .xy: scales of the squared-distance terms."
     },
     {
+      "name": "FroxelTint",
+      "offset": 1504,
+      "type": "Vector4",
+      "evidence": "Slot 94 y: multiplies the context row 0..2 y components (a view-space direction) before the volume lookup; xyz read."
+    },
+    {
+      "name": "FroxelNearFar",
+      "offset": 1520,
+      "type": "Vector4",
+      "evidence": "Slot 95 xy: the view distance is clamped between x and y, then log2 of it picks the slice of the fog volumes (gsys user volumes read as extinction and in-scatter); also 1/x scales the distance into the extinction exponent."
+    },
+    {
+      "name": "FroxelScale",
+      "offset": 1536,
+      "type": "Vector4",
+      "evidence": "Slot 96 xyz: x and y scale the screen position (pixel * context resolution reciprocal) into the fog volumes u and v, z scales exp2 of the slice term into w."
+    },
+    {
       "name": "ReflectionLod",
       "offset": 1552,
       "type": "Vector4",
       "evidence": "Slot 97 .x: the level of detail of the environment cube map read and a roughness multiplier."
+    },
+    {
+      "name": "ProbeOffset",
+      "offset": 1792,
+      "type": "Vector4",
+      "evidence": "Slot 112 w: multiplied by a view-space direction and added to the position before the probe lookup, fma(direction, w, position): a probe parallax offset."
     },
     {
       "name": "DepthLimit",

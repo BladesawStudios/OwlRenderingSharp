@@ -127,6 +127,8 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     OotBlockProfile profile = new(new OotBlockLayouts(), Environment());
     IBlockProfile active = profile;
     if (args.Contains("--slots")) new SlotAudit(content, profile).Run(model, new FrameInfo(BindPoseCamera.Frame(model.Skeleton), width, height), Console.Out);
+    if (args.Contains("--palette"))
+        foreach (string key in Environment().Palette.Keys.Order()) Console.WriteLine($"{key} = {Environment().Palette.GetColor(key, Vector4.NaN)} / {Environment().Palette.GetFloat(key, float.NaN)}");
     if (Option("--env-slots") is { } range)
     {
         string[] ends = range.Split('-');

@@ -46,8 +46,15 @@ public static class ModelSnapshot
         int width = color.Width, height = color.Height;
         Matrix4x4 world = scene.Placement ?? Matrix4x4.Identity;
         GpuCommands commands = new(device);
-        using ShadowPrepass? prepass = scene.Shadows is null ? null : CastShadows(device, drawer, model, camera, color, scene, world, commands);
-        if (prepass is not null) scene = scene with { Textures = new Dictionary<string, FrameTexture>(scene.Textures ?? new Dictionary<string, FrameTexture>()) { [ShadowPrepass.SamplerName] = prepass.Texture } };
+        using GpuTexture viewDepth = new(device, "snapshot view depth", GpuFormat.Depth32F, width, height);
+        RenderViewDepth(device, drawer, model, camera, color, viewDepth, world, commands);
+        using ViewDepthBuffers views = new(device, width, height);
+        views.Resolve(viewDepth, camera);
+        Dictionary<string, FrameTexture> textures = new(scene.Textures ?? new Dictionary<string, FrameTexture>());
+        foreach ((string name, FrameTexture texture) in views.Textures) textures[name] = texture;
+        using ShadowPrepass? prepass = scene.Shadows is null ? null : CastShadows(device, drawer, model, camera, viewDepth, scene, world);
+        if (prepass is not null) textures[ShadowPrepass.SamplerName] = prepass.Texture;
+        scene = scene with { Textures = textures };
         using GpuTexture depth = new(device, "snapshot depth", GpuFormat.Depth32F, width, height);
         using GpuFramebuffer target = new(device, "snapshot", [color], depth);
         commands.UseZeroToOneDepth();
@@ -57,22 +64,22 @@ public static class ModelSnapshot
         device.Check("ModelSnapshot.Render", model.Name);
     }
 
-    // Renders the cascades from the sun, then a depth image of the view, and resolves the screen-space shadow mask from the two.
-    private static ShadowPrepass CastShadows(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, SnapshotScene scene, Matrix4x4 world, GpuCommands commands)
+    // The depth image of the view: the opaque shapes drawn with no colour, into a scratch colour target.
+    private static void RenderViewDepth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture scratch, GpuTexture viewDepth, Matrix4x4 world, GpuCommands commands)
+    {
+        using GpuFramebuffer depthTarget = new(device, "snapshot view depth", [scratch], viewDepth);
+        commands.UseZeroToOneDepth();
+        commands.Target(depthTarget, scratch.Width, scratch.Height);
+        commands.Clear(0f, 0f, 0f, 0f);
+        drawer.Draw(model, new FrameInfo(camera, scratch.Width, scratch.Height), world, new PassPlan([RenderPass.ZPrepass]));
+    }
+
+    // Renders the cascades from the sun and resolves the screen-space shadow mask from them and the view depth.
+    private static ShadowPrepass CastShadows(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture viewDepth, SnapshotScene scene, Matrix4x4 world)
     {
         ShadowMap shadows = scene.Shadows!;
-        int width = color.Width, height = color.Height;
-        shadows.Render(camera, (float)width / height, scene.ToSun, scene.ShadowDistance, light => drawer.Draw(model, light, world, PassPlan.Shadow));
-        using GpuTexture viewDepth = new(device, "snapshot view depth", GpuFormat.Depth32F, width, height);
-        using (GpuFramebuffer depthTarget = new(device, "snapshot view depth", [color], viewDepth))
-        {
-            commands.UseZeroToOneDepth();
-            commands.Target(depthTarget, width, height);
-            commands.Clear(0f, 0f, 0f, 0f);
-            drawer.Draw(model, new FrameInfo(camera, width, height), world, new PassPlan([RenderPass.ZPrepass]));
-        }
-
-        ShadowPrepass prepass = new(device, width, height);
+        shadows.Render(camera, (float)viewDepth.Width / viewDepth.Height, scene.ToSun, scene.ShadowDistance, light => drawer.Draw(model, light, world, PassPlan.Shadow));
+        ShadowPrepass prepass = new(device, viewDepth.Width, viewDepth.Height);
         prepass.Resolve(viewDepth, camera, shadows);
         return prepass;
     }

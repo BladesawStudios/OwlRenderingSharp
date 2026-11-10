@@ -42,6 +42,7 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
                 break;
             case OotBlockLayouts.Environment:
                 OotLights.Fill(writer, Environment);
+                FillVolumes(writer, frame);
                 break;
             case OotBlockLayouts.SceneMaterial:
                 writer.Set("AmbientBlend", new Vector4(0f, 1f, 0f, 0f)).Set("LightScale", new Vector4(1f, 1f, 0f, 0f));
@@ -53,6 +54,13 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
                 FillPalette(writer, shape);
                 break;
         }
+    }
+
+    // The fog volumes' addressing: the distance range the slice is chosen in, and unit scales onto the screen. The volumes themselves are empty (no fog), so these only keep the lookups well defined.
+    private static void FillVolumes(BlockWriter writer, FrameInfo frame)
+    {
+        writer.Set("FroxelNearFar", new Vector4(frame.Camera.NearPlane, frame.Camera.FarPlane, 0f, 0f));
+        writer.Set("FroxelScale", new Vector4(1f, 1f, 1f, 0f));
     }
 
     private static void FillShape(BlockWriter writer, ShapeInfo shape)
