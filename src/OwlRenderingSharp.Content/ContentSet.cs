@@ -1,6 +1,7 @@
 using BfShaderSharp.Pack;
 using BfShaderSharp.Pack.Records;
 using BfShaderSharp.Prepared;
+using OwlRenderingSharp.Content.Textures;
 
 namespace OwlRenderingSharp.Content;
 
@@ -43,6 +44,8 @@ public sealed class ContentSet(IRenderDiagnostics diagnostics) : IDisposable
         if (texture is null) diagnostics.Report(new RenderDiagnostic(DiagnosticSeverity.Warning, "No pack has this texture; the neutral texture is used", Resource: name));
         return texture;
     }
+
+    public DecodedTexture DecodeTexture(TextureRecord record) => TextureDecoding.Decode(record, Blob(record.File).Bytes);
 
     public MaterialRecord Material(BlobKey key) => Holding(key).Material(key);
 

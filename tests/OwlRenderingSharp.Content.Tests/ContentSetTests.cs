@@ -57,6 +57,25 @@ public sealed class ContentSetTests : IDisposable
     }
 
     [Fact]
+    public void ATextureIsDecodedFromTheBlobItsRecordNames()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"owl-{Guid.NewGuid():N}.bfap");
+        _files.Add(path);
+        BlobKey key;
+        using (FileStream stream = File.Create(path))
+        {
+            PackWriter writer = new(stream);
+            key = writer.Add(new byte[16], BlobCodec.Raw);
+            writer.Finish();
+        }
+
+        using ContentSet content = new(_diagnostics);
+        content.AddPack(path);
+        TextureRecord record = new(key, 0, 0x0b01, 2, 2, 1, 1, 1, TextureStorage.Linear, [16]);
+        Assert.Equal(16, content.DecodeTexture(record).Levels[0].Length);
+    }
+
+    [Fact]
     public void AMissingBlobNamesTheKey()
     {
         using ContentSet content = new(_diagnostics);
