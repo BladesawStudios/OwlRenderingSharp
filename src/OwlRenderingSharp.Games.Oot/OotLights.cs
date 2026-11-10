@@ -21,6 +21,9 @@ public static class OotLights
     /// <summary>What the palette's hemisphere intensity is multiplied by; chosen by eye (0.4 keeps the sun's shading visible, 1 flattens it).</summary>
     public const float HemiScale = 0.4f;
 
+    /// <summary>The distance in metres from the camera to the subject that the character light rig is laid out for, and the strengths of its three lights as shares of the sun.</summary>
+    public const float CharacterDistance = 3f, KeyScale = 0.5f, FillScale = 0.2f, RimScale = 0.3f;
+
     private static readonly Vector4 Ambient = new(0.10f, 0.11f, 0.13f, 1f);
 
     public static void Fill(BlockWriter writer, OotEnvironment environment)
@@ -36,6 +39,18 @@ public static class OotLights
         writer.Set("HemiSky", new Vector4(sky, 1f)).Set("HemiGround", new Vector4(ground, 1f));
         writer.Set("AmbientColor", Ambient);
         FillNeutral(writer);
+        FillCharacterLights(writer, sun);
+    }
+
+    // The three point lights the character programs read, as a rig fixed to the camera: a key high on the left of the lens, a weaker fill low on the right and a rim behind the subject.
+    private static void FillCharacterLights(BlockWriter writer, Vector3 sun)
+    {
+        float d = CharacterDistance;
+        writer.Set("PointLightPosition0", new Vector4(-0.6f * d, 0.6f * d, -0.2f * d, 0f)).Set("PointLightColor0", new Vector4(sun * KeyScale, 1f));
+        writer.Set("PointLightPosition1", new Vector4(0.7f * d, -0.1f * d, -0.2f * d, 0f)).Set("PointLightColor1", new Vector4(sun * FillScale, 1f));
+        writer.Set("PointLightPosition2", new Vector4(0.4f * d, 0.5f * d, -1.6f * d, 0f)).Set("PointLightColor2", new Vector4(sun * RimScale, 1f));
+        writer.Set("PointLightRange", new Vector4(1f, 0f, 0f, 0f));
+        writer.Set("PointLightRange1", new Vector4(0f, 0f, 0f, 0f));
     }
 
     // The hemisphere light's colours, which also stand in for the sky and the ground a reflection would show.
@@ -55,11 +70,6 @@ public static class OotLights
         writer.Set("TerminatorRamp", new Vector4(0f, 1f, 0f, 0f));
         writer.Set("LightVolume", new Vector4(0.5f, 0.5f, 0.5f, 0f));
         writer.Set("LightVolumeBlend", Vector4.One);
-        writer.Set("PointLightPosition0", new Vector4(0f, 1e6f, 0f, 0f));
-        writer.Set("PointLightPosition1", new Vector4(0f, 1e6f, 0f, 0f));
-        writer.Set("PointLightRange", Vector4.One);
-        writer.Set("PointLightRange1", Vector4.One);
-        writer.Set("PointLightPosition2", new Vector4(0f, 1e6f, 0f, 0f));
         writer.Set("ShadowTint", new Vector4(1f, 1f, 0f, 0f));
         writer.Set("SkinRamp", new Vector4(1f, 0f, 0f, 1f));
         writer.Set("SkinScales", Vector4.One).Set("SurfaceScales", new Vector4(1f, 1f, 1f, 0f)).Set("SpecularScales", Vector4.One);

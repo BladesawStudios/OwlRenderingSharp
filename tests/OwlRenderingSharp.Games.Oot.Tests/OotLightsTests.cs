@@ -43,11 +43,26 @@ public class OotLightsTests
     }
 
     [Fact]
-    public void ThePointLightsAreInertAndFarAway()
+    public void TheCharacterRigIsAKeyAboveLeftAFillBelowRightAndARimBehindEachAShareOfTheSun()
     {
         BlockWriter writer = Fill(OotEnvironment.Neutral);
-        Assert.Equal(Vector4.Zero, writer.GetVector4("PointLightColor0"));
-        Assert.Equal(1e6f, writer.GetVector4("PointLightPosition1").Y);
+        Vector4 sun = writer.GetVector4("SunColor");
+        Assert.Equal(sun.X * OotLights.KeyScale, writer.GetVector4("PointLightColor0").X, 1e-4f);
+        Assert.Equal(sun.X * OotLights.FillScale, writer.GetVector4("PointLightColor1").X, 1e-4f);
+        Assert.Equal(sun.X * OotLights.RimScale, writer.GetVector4("PointLightColor2").X, 1e-4f);
+        Vector4 key = writer.GetVector4("PointLightPosition0"), fill = writer.GetVector4("PointLightPosition1"), rim = writer.GetVector4("PointLightPosition2");
+        Assert.True(key.X < 0f && key.Y > 0f);
+        Assert.True(fill.X > 0f && fill.Y < key.Y);
+        Assert.True(rim.Z < key.Z);
+    }
+
+    [Fact]
+    public void AWhiteSkyReplacesTheHemisphereTopColourAndNothingElse()
+    {
+        EnvPalette palette = Palette(("HemiLightColorTop", new object?[] { 1.0, 0.5, 0.2, 1.0 }), ("FogStart", 7.0));
+        EnvPalette white = new OotEnvironment(palette, 0, 45).WithWhiteSky().Palette;
+        Assert.Equal(Vector4.One, white.GetColor("HemiLightColorTop", Vector4.Zero));
+        Assert.Equal(7f, white.GetFloat("FogStart", 0f));
     }
 
     [Fact]

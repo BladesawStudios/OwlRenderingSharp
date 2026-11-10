@@ -8,11 +8,11 @@ namespace OwlRenderingSharp.Graph;
 /// <remarks>
 /// The choices are the material's own, then the draw-time ones: the pass as <c>gsys_assign_type</c>, the shape's skin weight count as <c>gsys_weight</c> and the renderer's
 /// <see cref="PassOptions"/>. When no program was compiled with every choice the nearest one is taken, weighing the pass first, then the skin count, then the renderer's
-/// options, so a pass never silently becomes another. The result is -1 when the shader archive lacks the shading model. The lookups are built once per shading model and kept.
+/// options, so a pass never silently becomes another. The engine turns the shadow pre-pass option on for materials that receive the pre-pass shadow whatever the material file says, so that option is weighed least: without that a metal material whose own program has it on was drawn with a program that has metalness and occlusion off. The result is -1 when the shader archive lacks the shading model. The lookups are built once per shading model and kept.
 /// </remarks>
 public sealed class PassProgramSelector(ContentSet content, PassOptions options)
 {
-    private const string AssignType = "gsys_assign_type", Weight = "gsys_weight";
+    private const string AssignType = "gsys_assign_type", Weight = "gsys_weight", ShadowPrePass = "ns_enable_shadow_pre_pass";
     private readonly Dictionary<(string, string), ProgramLookup?> _lookups = [];
 
     public int Select(MaterialRecord material, RenderPass pass, int skinCount)
@@ -31,6 +31,7 @@ public sealed class PassProgramSelector(ContentSet content, PassOptions options)
     {
         AssignType => 10000,
         Weight => 1000,
+        ShadowPrePass => 1,
         _ when options.Overrides.ContainsKey(name) => 100,
         _ when name.StartsWith("o_", StringComparison.Ordinal) => 1,
         _ => 16,

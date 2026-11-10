@@ -15,6 +15,9 @@ public sealed class EnvPalette(string name, IReadOnlyDictionary<string, object?>
 
     public IReadOnlyCollection<string> Keys => values.Keys.ToArray();
 
+    public EnvPalette With(string key, Vector4 color) =>
+        new(Name, new Dictionary<string, object?>(values) { [key] = new object?[] { (double)color.X, (double)color.Y, (double)color.Z, (double)color.W } });
+
     public bool Has(string key) => values.ContainsKey(key);
 
     public float GetFloat(string key, float fallback) => values.TryGetValue(key, out object? raw) && TryFloat(raw, out float value) ? value : fallback;
