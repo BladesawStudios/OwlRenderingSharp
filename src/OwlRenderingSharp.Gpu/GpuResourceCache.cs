@@ -32,7 +32,7 @@ public sealed class GpuResourceCache(GpuDevice device, ContentSet content) : IDi
     {
         (BlobKey, string) key = (shape, layoutId);
         if (!_geometry.TryGetValue(key, out GpuGeometry? geometry))
-            _geometry[key] = geometry = new GpuGeometry(device, name, ShapeGeometryBuilder.Build(content.Shape(shape), locationsByName, k => content.Blob(k).Bytes));
+            _geometry[key] = geometry = new GpuGeometry(device, name, ShapeGeometryBuilder.Build(content.Shape(shape), locationsByName, k => content.Bytes(k)));
         return geometry;
     }
 

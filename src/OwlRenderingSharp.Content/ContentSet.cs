@@ -1,7 +1,9 @@
+using BfShaderSharp.Errors;
 using BfShaderSharp.Pack;
 using BfShaderSharp.Pack.Records;
 using BfShaderSharp.Prepared;
 using OwlRenderingSharp.Content.Textures;
+using ZsDicSharp;
 
 namespace OwlRenderingSharp.Content;
 
@@ -14,6 +16,7 @@ namespace OwlRenderingSharp.Content;
 public sealed class ContentSet(IRenderDiagnostics diagnostics) : IDisposable
 {
     private readonly List<AssetPack> _packs = [];
+    private readonly ZsDic _zstd = ZsDic.Dictionaryless();
     private readonly Dictionary<string, PreparedArchive> _shaders = new(StringComparer.Ordinal);
 
     public IReadOnlyList<AssetPack> Packs => _packs;
@@ -45,7 +48,7 @@ public sealed class ContentSet(IRenderDiagnostics diagnostics) : IDisposable
         return texture;
     }
 
-    public DecodedTexture DecodeTexture(TextureRecord record) => TextureDecoding.Decode(record, Blob(record.File).Bytes);
+    public DecodedTexture DecodeTexture(TextureRecord record) => TextureDecoding.Decode(record, Bytes(record.File));
 
     public MaterialRecord Material(BlobKey key) => Holding(key).Material(key);
 
@@ -57,10 +60,20 @@ public sealed class ContentSet(IRenderDiagnostics diagnostics) : IDisposable
 
     public BlobData Blob(BlobKey key) => Holding(key).Blob(key);
 
+    // The blob's bytes as the data they hold: a zstd frame is decompressed. A frame that needs a dictionary is not read.
+    public byte[] Bytes(BlobKey key)
+    {
+        BlobData blob = Blob(key);
+        if (blob.Codec != BlobCodec.ZstdFrame) return blob.Bytes;
+        if (blob.DictionaryId != 0) throw new BfShaderUnsupportedException($"Blob {key} is compressed with dictionary {blob.DictionaryId}");
+        return _zstd.Decompress(blob.Bytes, ZsDictionary.None);
+    }
+
     public void Dispose()
     {
         foreach (AssetPack pack in _packs) pack.Dispose();
         foreach (PreparedArchive archive in _shaders.Values) archive.Dispose();
+        _zstd.Dispose();
     }
 
     private AssetPack Holding(BlobKey key) =>

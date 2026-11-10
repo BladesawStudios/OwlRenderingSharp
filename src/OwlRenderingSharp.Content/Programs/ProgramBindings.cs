@@ -8,7 +8,7 @@ namespace OwlRenderingSharp.Content.Programs;
 /// <remarks>
 /// A decompiled constant buffer <c>_vp_cN</c> or <c>_fp_cN</c> holds the program's block at binding slot N - 3 for that stage, and a sampler
 /// <c>fp_t_tcb_H</c> the sampler at slot (H - 8) / 2, H being hexadecimal. The slots are the program's own, read from the prepared archive. Storage
-/// blocks and the support buffer are listed apart since the renderer provides them. A declaration the archive has no name for throws
+/// blocks and the support buffer are listed apart since the renderer provides them; constant buffers 0-2 belong to the driver, not the program, and are left out. A declaration the archive has no name for throws
 /// <see cref="BfShaderFormatException"/>.
 /// </remarks>
 public sealed partial class ProgramBindings
@@ -58,7 +58,7 @@ public sealed partial class ProgramBindings
             {
                 if (block.IsStorage) storage.Add(block.Name);
                 else if (block.Name == "_support_buffer") support = true;
-                else blocks.Add(new BlockBinding(block.Name, isVertex, Lookup(blockNames, isVertex, SlotOfBlock(block.Name), block.Name)));
+                else if (SlotOfBlock(block.Name) >= 0) blocks.Add(new BlockBinding(block.Name, isVertex, Lookup(blockNames, isVertex, SlotOfBlock(block.Name), block.Name)));
             }
 
             foreach (GlslSampler sampler in stage.Samplers)

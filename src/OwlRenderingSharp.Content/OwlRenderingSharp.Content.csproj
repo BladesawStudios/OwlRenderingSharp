@@ -10,6 +10,7 @@
     <ProjectReference Include="..\OwlRenderingSharp.Core\OwlRenderingSharp.Core.csproj" />
     <ProjectReference Include="..\..\vendor\BfShaderSharp\src\BfShaderSharp\BfShaderSharp.csproj" />
     <ProjectReference Include="..\..\vendor\BfShaderSharp\lib\vendor\BfresSharp\lib\vendor\TexSharp\src\TexSharp\TexSharp.csproj" />
+    <ProjectReference Include="..\..\vendor\BfShaderSharp\lib\vendor\ZsDicSharp\src\ZsDicSharp\ZsDicSharp.csproj" />
   </ItemGroup>
 
 </Project>

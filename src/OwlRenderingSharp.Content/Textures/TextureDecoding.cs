@@ -28,7 +28,7 @@ public static class TextureDecoding
         {
             int width = Math.Max(1, record.Width >> level), height = Math.Max(1, record.Height >> level);
             int size = checked((int)record.LevelSizes[level]);
-            if (size < format.LevelSize(width, height) || offset + size > data.Length) throw new BfShaderFormatException($"Texture level {level} does not fit its blob");
+            if (size < format.LevelSize(width, height) || offset + size > data.Length) throw new BfShaderFormatException($"Texture level {level} ({width}x{height}, {size} bytes at {offset}, needs {format.LevelSize(width, height)}) does not fit its blob of {data.Length} bytes");
             ReadOnlySpan<byte> bytes = data.Slice(offset, size);
             levels.Add(passThrough is null ? TextureDecoder.ToRgba8(format, bytes, width, height, snorm) : bytes[..format.LevelSize(width, height)].ToArray());
             offset += size;
