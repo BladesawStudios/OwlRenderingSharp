@@ -3,11 +3,13 @@
     <Project Path="src/OwlRenderingSharp.Core/OwlRenderingSharp.Core.csproj" />
     <Project Path="src/OwlRenderingSharp.Content/OwlRenderingSharp.Content.csproj" />
     <Project Path="src/OwlRenderingSharp.Gpu/OwlRenderingSharp.Gpu.csproj" />
+    <Project Path="src/OwlRenderingSharp.Graph/OwlRenderingSharp.Graph.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OwlRenderingSharp.Core.Tests/OwlRenderingSharp.Core.Tests.csproj" />
     <Project Path="tests/OwlRenderingSharp.Content.Tests/OwlRenderingSharp.Content.Tests.csproj" />
     <Project Path="tests/OwlRenderingSharp.Bench/OwlRenderingSharp.Bench.csproj" />
     <Project Path="tests/OwlRenderingSharp.Gpu.Tests/OwlRenderingSharp.Gpu.Tests.csproj" />
+    <Project Path="tests/OwlRenderingSharp.Graph.Tests/OwlRenderingSharp.Graph.Tests.csproj" />
   </Folder>
 </Solution>

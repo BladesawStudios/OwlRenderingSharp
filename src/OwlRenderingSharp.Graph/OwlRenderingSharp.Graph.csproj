@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Draws models: material resources, program selection, draw state and the draw call. The frame graph builds on it.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OwlRenderingSharp.Gpu\OwlRenderingSharp.Gpu.csproj" />
+  </ItemGroup>
+
+</Project>
