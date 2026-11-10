@@ -26,13 +26,13 @@ public class GpuBlendTests(GlFixture gl)
     {
         gl.Require().Run(device =>
         {
-            device.Apply(DrawState.Opaque with { Blend = AlphaBlend, ColorWrite = false });
+            device.Apply(DrawState.Opaque with { Blend = AlphaBlend, Channels = ColorMask.None });
             device.Apply(DrawState.Opaque);
             Assert.False(device.Gl.IsEnabled(EnableCap.Blend));
             bool[] mask = new bool[4];
             device.Gl.GetBoolean(GetPName.ColorWritemask, mask);
             Assert.All(mask, on => Assert.True(on));
-            device.Apply(DrawState.Opaque with { ColorWrite = false });
+            device.Apply(DrawState.Opaque with { Channels = ColorMask.None });
             device.Gl.GetBoolean(GetPName.ColorWritemask, mask);
             Assert.All(mask, on => Assert.False(on));
         });

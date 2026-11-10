@@ -65,7 +65,7 @@ public sealed class ModelDrawer : IDisposable
         if (chosen is null) return;
         ShapeInfo info = new(shape.Name, shape.Record, shape.BoneIndex, model.Skeleton, world);
         Prepare(model.Name, material, chosen.Program, info, frame, frameBlocks);
-        _services.Device.Apply(pass.DepthOnly() ? material.State with { ColorWrite = false, Blend = BlendState.Off } : material.State);
+        _services.Device.Apply(pass.DepthOnly() ? material.State with { Channels = ColorMask.None, Blend = BlendState.Off } : material.State);
         foreach (TextureUnit unit in chosen.Units) _commands.BindTexture((uint)unit.Unit, unit.Texture, unit.Sampler);
         _commands.Draw(shape.Geometry.Meshes[0], $"ModelDrawer.Draw {pass}", $"{model.Name}/{shape.Name}");
     }

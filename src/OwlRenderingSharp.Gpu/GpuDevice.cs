@@ -12,64 +12,11 @@ public sealed class GpuDevice(GL gl)
 {
     private const int MaxDrain = 32;
 
+    private readonly DrawStateApplier _applier = new(gl);
+
     public GL Gl { get; } = gl;
 
-    public void Apply(DrawState state)
-    {
-        SetCap(EnableCap.DepthTest, state.DepthTest);
-        Gl.DepthMask(state.DepthWrite);
-        Gl.DepthFunc(state.DepthFunc switch
-        {
-            DepthFunc.Never => GLEnum.Never,
-            DepthFunc.Less => GLEnum.Less,
-            DepthFunc.Equal => GLEnum.Equal,
-            DepthFunc.LessOrEqual => GLEnum.Lequal,
-            DepthFunc.Greater => GLEnum.Greater,
-            DepthFunc.NotEqual => GLEnum.Notequal,
-            DepthFunc.GreaterOrEqual => GLEnum.Gequal,
-            _ => GLEnum.Always,
-        });
-        SetCap(EnableCap.CullFace, state.Cull != CullMode.None);
-        if (state.Cull != CullMode.None) Gl.CullFace(state.Cull switch { CullMode.Front => TriangleFace.Front, CullMode.Both => TriangleFace.FrontAndBack, _ => TriangleFace.Back });
-        Gl.ColorMask(state.ColorWrite, state.ColorWrite, state.ColorWrite, state.ColorWrite);
-        ApplyBlend(state.Blend);
-    }
-
-    private void ApplyBlend(BlendState blend)
-    {
-        SetCap(EnableCap.Blend, blend.Enabled);
-        if (!blend.Enabled) return;
-        Gl.BlendEquationSeparate(Equation(blend.RgbOp), Equation(blend.AlphaOp));
-        Gl.BlendFuncSeparate(Factor(blend.RgbSource), Factor(blend.RgbDestination), Factor(blend.AlphaSource), Factor(blend.AlphaDestination));
-        Gl.BlendColor(blend.Constant.X, blend.Constant.Y, blend.Constant.Z, blend.Constant.W);
-    }
-
-    private static BlendEquationModeEXT Equation(BlendOp op) => op switch
-    {
-        BlendOp.Subtract => BlendEquationModeEXT.FuncSubtract,
-        BlendOp.ReverseSubtract => BlendEquationModeEXT.FuncReverseSubtract,
-        BlendOp.Min => BlendEquationModeEXT.Min,
-        BlendOp.Max => BlendEquationModeEXT.Max,
-        _ => BlendEquationModeEXT.FuncAdd,
-    };
-
-    private static BlendingFactor Factor(BlendFactor factor) => factor switch
-    {
-        BlendFactor.Zero => BlendingFactor.Zero,
-        BlendFactor.SrcColor => BlendingFactor.SrcColor,
-        BlendFactor.OneMinusSrcColor => BlendingFactor.OneMinusSrcColor,
-        BlendFactor.DstColor => BlendingFactor.DstColor,
-        BlendFactor.OneMinusDstColor => BlendingFactor.OneMinusDstColor,
-        BlendFactor.SrcAlpha => BlendingFactor.SrcAlpha,
-        BlendFactor.OneMinusSrcAlpha => BlendingFactor.OneMinusSrcAlpha,
-        BlendFactor.DstAlpha => BlendingFactor.DstAlpha,
-        BlendFactor.OneMinusDstAlpha => BlendingFactor.OneMinusDstAlpha,
-        BlendFactor.ConstantColor => BlendingFactor.ConstantColor,
-        BlendFactor.OneMinusConstantColor => BlendingFactor.OneMinusConstantColor,
-        BlendFactor.ConstantAlpha => BlendingFactor.ConstantAlpha,
-        BlendFactor.OneMinusConstantAlpha => BlendingFactor.OneMinusConstantAlpha,
-        _ => BlendingFactor.One,
-    };
+    public void Apply(DrawState state) => _applier.Apply(state);
 
     public void Check(string? pass = null, string? resource = null)
     {
@@ -82,11 +29,5 @@ public sealed class GpuDevice(GL gl)
         }
 
         if (errors.Count > 0) throw new GpuException($"GL error: {string.Join(", ", errors)}", pass, resource);
-    }
-
-    private void SetCap(EnableCap cap, bool on)
-    {
-        if (on) Gl.Enable(cap);
-        else Gl.Disable(cap);
     }
 }
