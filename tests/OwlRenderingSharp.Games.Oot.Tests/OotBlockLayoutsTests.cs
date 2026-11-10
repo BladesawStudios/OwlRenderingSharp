@@ -10,7 +10,8 @@ public class OotBlockLayoutsTests
         OotBlockLayouts layouts = new();
         Assert.Equal(13552, layouts.Find(OotBlockLayouts.Context)!.Size);
         Assert.Equal(64, layouts.Find(OotBlockLayouts.Shape)!.Field("Position").Offset);
-        Assert.Null(layouts.Find("gsys_environment"));
+        Assert.Equal(1824, layouts.Find(OotBlockLayouts.Environment)!.Size);
+        Assert.Null(layouts.Find("gsys_scene_material"));
     }
 
     [Fact]

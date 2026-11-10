@@ -1,0 +1,16 @@
+{
+  "name": "gsys_environment",
+  "size": 1824,
+  "fields": [
+    { "name": "Ambient", "offset": 0, "type": "Vector4", "evidence": "Slot 0, the first light slot; WildRenderingSharp GsysEnvironment.Ambient says both games lay the light slots out the same. Not yet confirmed against an OoT program." },
+    { "name": "HemiSky", "offset": 16, "type": "Vector4", "evidence": "Slot 1 (WildRenderingSharp GsysEnvironment.HemiSky)." },
+    { "name": "HemiGround", "offset": 32, "type": "Vector4", "evidence": "Slot 2 (WildRenderingSharp GsysEnvironment.HemiGround)." },
+    { "name": "HemiDirection", "offset": 48, "type": "Vector4", "evidence": "Slot 3 (WildRenderingSharp GsysEnvironment.HemiDirection): the up axis the hemisphere blends along." },
+    { "name": "LightDirection0", "offset": 64, "type": "Vector4", "evidence": "Slot 4 (WildRenderingSharp): the direction the main light travels, in view space." },
+    { "name": "LightColor0", "offset": 80, "type": "Vector4", "evidence": "Slot 5 (WildRenderingSharp)." },
+    { "name": "LightSpecularColor0", "offset": 96, "type": "Vector4", "evidence": "Slot 6 (WildRenderingSharp)." },
+    { "name": "LightDirection1", "offset": 112, "type": "Vector4", "evidence": "Slot 7 (WildRenderingSharp): the second light." },
+    { "name": "LightColor1", "offset": 128, "type": "Vector4", "evidence": "Slot 8 (WildRenderingSharp)." },
+    { "name": "LightSpecularColor1", "offset": 144, "type": "Vector4", "evidence": "Slot 9 (WildRenderingSharp)." }
+  ]
+}

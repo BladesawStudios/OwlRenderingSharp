@@ -10,7 +10,7 @@ namespace OwlRenderingSharp.Games.Oot;
 /// </remarks>
 public sealed class OotBlockLayouts
 {
-    public const string Context = "gsys_context", Shape = "gsys_shape", Skeleton = "gsys_skeleton";
+    public const string Context = "gsys_context", Environment = "gsys_environment", Shape = "gsys_shape", Skeleton = "gsys_skeleton";
     private const int BoneBytes = 48;
     private readonly Dictionary<string, BlockLayout> _files = [];
     private readonly Dictionary<int, BlockLayout> _skeletons = [];

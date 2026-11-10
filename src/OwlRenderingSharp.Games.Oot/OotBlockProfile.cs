@@ -7,21 +7,24 @@ namespace OwlRenderingSharp.Games.Oot;
 
 /// <summary>Fills the uniform blocks of the game's model shading: the camera in the context, the instance position in the shape block and the bind-pose skeleton palette.</summary>
 /// <remarks>
-/// The context, shape and skeleton blocks are laid out and filled; the material block comes from the pack; the environment and scene material blocks are frame-level and
-/// stay zero until their fields are worked out. The palette is indexed by the skeleton's matrix number. In the bind pose a smooth matrix is the identity (its world matrix times its inverse bind) and a rigid
+/// The context, shape and skeleton blocks are laid out and filled; the material block comes from the pack; the environment block is frame-level and carries the lights of its
+/// <see cref="Environment"/>; the scene material block stays zero until its fields are worked out. The palette is indexed by the skeleton's matrix number. In the bind pose a smooth matrix is the identity (its world matrix times its inverse bind) and a rigid
 /// matrix, one past the smooth ones, is its bone's world matrix. The shape block carries only the translation of the world matrix.
 /// </remarks>
-public sealed class OotBlockProfile(OotBlockLayouts layouts) : IBlockProfile
+public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment environment) : IBlockProfile
 {
-    public OotBlockProfile() : this(new OotBlockLayouts())
+    public OotBlockProfile() : this(new OotBlockLayouts(), OotEnvironment.Neutral)
     {
     }
+
+    // The lighting the environment block is filled from; the host changes it as the place or the time of day does.
+    public OotEnvironment Environment { get; set; } = environment;
 
     public BlockScope Scope(string block) => block switch
     {
         "gsys_material" => BlockScope.Material,
         OotBlockLayouts.Shape or OotBlockLayouts.Skeleton => BlockScope.Shape,
-        OotBlockLayouts.Context or "gsys_environment" or "gsys_scene_material" => BlockScope.Frame,
+        OotBlockLayouts.Context or OotBlockLayouts.Environment or "gsys_scene_material" => BlockScope.Frame,
         _ => BlockScope.Unknown,
     };
 
@@ -34,6 +37,9 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts) : IBlockProfile
         {
             case OotBlockLayouts.Context:
                 FillContext(writer, frame);
+                break;
+            case OotBlockLayouts.Environment:
+                OotLights.Fill(writer, Environment, frame.Camera.ViewMatrix());
                 break;
             case OotBlockLayouts.Shape when shape is not null:
                 writer.Set("Position", new Vector4(shape.World.Translation, 1f));
