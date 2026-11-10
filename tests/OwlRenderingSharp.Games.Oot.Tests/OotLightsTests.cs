@@ -59,4 +59,15 @@ public class OotLightsTests
         Assert.Equal("Night", environment.Palette.Name);
         Assert.Equal((120f, 30f), (environment.SunAzimuth, environment.SunElevation));
     }
+
+    [Fact]
+    public void TheSkyColoursAreTheHemisphereLightsAndFeedTheEnvironmentBlock()
+    {
+        (System.Numerics.Vector3 sky, System.Numerics.Vector3 ground) = OotLights.SkyColors(OotEnvironment.Neutral);
+        Assert.Equal(System.Numerics.Vector3.One, sky);
+        Assert.Equal(new System.Numerics.Vector3(0.5f), ground);
+        BlockWriter writer = new(new OotBlockLayouts().Find("gsys_environment")!);
+        OotLights.Fill(writer, OotEnvironment.Neutral);
+        Assert.Equal(new System.Numerics.Vector4(sky, 1f), writer.GetVector4("HemiSky"));
+    }
 }

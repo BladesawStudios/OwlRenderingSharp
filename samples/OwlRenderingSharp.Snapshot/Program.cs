@@ -133,6 +133,13 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         active = new EnvironmentProbe(profile, int.Parse(ends[0]), int.Parse(ends[^1]), new Vector4(v));
     }
 
+    foreach (string set in args.Where((a, i) => i > 0 && args[i - 1] == "--set"))
+    {
+        string[] target = set.Split('=')[0].Split('.');
+        float[] v = [.. set.Split('=')[1].Split(',').Select(float.Parse)];
+        active = new AblationProfile(active, target[0], target[1], new Vector4(v[0], v.Length > 1 ? v[1] : 0, v.Length > 2 ? v[2] : 0, v.Length > 3 ? v[3] : 0));
+    }
+
     if (Option("--ablate") is { } ablateBlock)
     {
         Ablate(device, services, model, profile, ablateBlock, float.Parse(Option("--ablate-value") ?? "0"), Option("--only") ?? "");
@@ -153,7 +160,13 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     ModelResources shown = Option("--only") is { } only ? new ModelResources(model.Name, model.Skeleton, [.. model.Shapes.Where(x => only.Split(',').Any(part => x.Name.Contains(part)))], model.Materials) : model;
     using ShadowMap? shadows = args.Contains("--shadow") ? new ShadowMap(services, int.Parse(Option("--shadow-size") ?? "2048")) : null;
     Vector3 toSun = OotLights.ToSun(profile.Environment);
-    byte[] image = ModelSnapshot.Render(device, drawer, shown, camera, width, height, new Vector4(0.2f, 0.3f, 0.4f, 1f), null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"));
+    (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
+    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, sky, ground);
+    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), probe?.Textures);
+    Vector4 background = new(0.2f, 0.3f, 0.4f, 1f);
+    byte[] image = args.Contains("--raw")
+        ? ModelSnapshot.Render(device, drawer, shown, camera, width, height, background, scene)
+        : FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"));
     if (shadows is not null)
         for (int c = 0; c < shadows.Cascades.Count; c++)
         {

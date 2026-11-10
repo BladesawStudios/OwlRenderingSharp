@@ -87,7 +87,7 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
         writer.Set("DepthScale", new Vector4(1f / (far - near), near / (far - near), aspect, 1f / aspect));
         writer.Set("FarMinusNear", new Vector4(far - near, 1f / (1f - near / far), 0f, 0f));
         writer.Set("FieldOfView", new Vector4(aspect * tanHalf, tanHalf, camera.FovRadians, 0f));
-        writer.Set("ProjectionA", ScreenRows(projection)).Set("ProjectionB", ScreenRows(projection)).Set("ShadowScale", new Vector4(1f, 1f, 0f, 0f)).Set("ScreenFade", new Vector4(1f, 1f, 0f, 0f));
+        writer.Set("ProjectionA", ScreenRows(projection)).Set("ProjectionB", ScreenRows(projection)).Set("ShadowScale", new Vector4(1f, 1f, 0f, 0f)).Set("ScreenFade", Vector4.Zero);
         writer.Set("Resolution", new Vector4(frame.Width, frame.Height, 1f / frame.Width, 1f / frame.Height));
         FillShadows(writer, frame, inverseView);
     }

@@ -23,15 +23,22 @@ public static class OotLights
         float exposure = 1f / MathF.Pow(2f, palette.GetFloat("ExposureValue", DefaultExposure));
         Vector4 diffuse = palette.GetColor("BgDifColor", Vector4.One);
         Vector3 sun = new Vector3(diffuse.X, diffuse.Y, diffuse.Z) * palette.GetFloat("BgDifIntensity", 1f / exposure) * exposure;
-        float hemi = palette.GetFloat("HemiLightIntensity", 1f);
-        Vector4 top = palette.GetColor("HemiLightColorTop", Vector4.One), bottom = palette.GetColor("HemiLightColorBottom", new Vector4(0.5f, 0.5f, 0.5f, 1f));
+        (Vector3 sky, Vector3 ground) = SkyColors(environment);
 
         writer.Set("SunColor", new Vector4(sun, 1f)).Set("LightColor0", new Vector4(sun, 1f));
         writer.Set("LightDirectionWorld", new Vector4(-Vector3.Normalize(ToSun(environment)), 0f));
-        writer.Set("HemiSky", new Vector4(top.X * hemi, top.Y * hemi, top.Z * hemi, 1f));
-        writer.Set("HemiGround", new Vector4(bottom.X * hemi, bottom.Y * hemi, bottom.Z * hemi, 1f));
+        writer.Set("HemiSky", new Vector4(sky, 1f)).Set("HemiGround", new Vector4(ground, 1f));
         writer.Set("AmbientColor", Ambient);
         FillNeutral(writer);
+    }
+
+    // The hemisphere light's colours, which also stand in for the sky and the ground a reflection would show.
+    public static (Vector3 Sky, Vector3 Ground) SkyColors(OotEnvironment environment)
+    {
+        EnvPalette palette = environment.Palette;
+        float hemi = palette.GetFloat("HemiLightIntensity", 1f);
+        Vector4 top = palette.GetColor("HemiLightColorTop", Vector4.One), bottom = palette.GetColor("HemiLightColorBottom", new Vector4(0.5f, 0.5f, 0.5f, 1f));
+        return (new Vector3(top.X, top.Y, top.Z) * hemi, new Vector3(bottom.X, bottom.Y, bottom.Z) * hemi);
     }
 
     // The slots with no palette field behind them yet, set to values that leave their terms inert.

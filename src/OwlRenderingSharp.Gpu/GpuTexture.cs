@@ -70,6 +70,16 @@ public sealed unsafe class GpuTexture : IDisposable
         return pixels;
     }
 
+    /// <summary>The base level as four 32-bit floats per pixel, whatever the stored format, converted by GL; for float and normalized colour formats.</summary>
+    public float[] DownloadAsFloats()
+    {
+        if (GpuFormats.IsCompressed(Format) || GpuFormats.IsDepth(Format)) throw new GpuException("Only an uncompressed colour texture is read back as floats", resource: Name);
+        float[] pixels = new float[Width * Height * 4];
+        _device.Gl.GetTextureImage(_handle, 0, PixelFormat.Rgba, PixelType.Float, (uint)(pixels.Length * sizeof(float)), new Span<float>(pixels));
+        _device.Check("GpuTexture.DownloadAsFloats", Name);
+        return pixels;
+    }
+
     public void GenerateMips()
     {
         _device.Gl.GenerateTextureMipmap(_handle);

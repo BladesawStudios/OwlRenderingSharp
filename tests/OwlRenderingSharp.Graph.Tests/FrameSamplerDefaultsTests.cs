@@ -33,4 +33,12 @@ public class FrameSamplerDefaultsTests
         Assert.Equal(0xFFFFFFFFu, FrameSamplerDefaults.For("gsys_user3", GpuSamplerKind.Texture2D));
         Assert.Equal(FrameSamplerDefaults.For("gsys_cube_map"), FrameSamplerDefaults.For("gsys_cube_map", GpuSamplerKind.Texture3D));
     }
+
+    [Fact]
+    public void AnUnassignedMetalnessMapIsBlackAndAnUnassignedNormalMapIsFlat()
+    {
+        Assert.Equal(0xFF000000u, FrameSamplerDefaults.For("_m0"));
+        Assert.Equal(0xFFFF8080u, FrameSamplerDefaults.For("_n1"));
+        Assert.Equal(0xFFFFFFFFu, FrameSamplerDefaults.For("_ao0"));
+    }
 }
