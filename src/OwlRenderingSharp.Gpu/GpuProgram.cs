@@ -60,6 +60,25 @@ public sealed class GpuProgram : IDisposable
         _device.Check("GpuProgram.BindUniformBlock", Name);
     }
 
+    // The sampler uniforms the linked program kept, each with the texture unit its binding qualifier fixes.
+    public IReadOnlyList<GpuSamplerUniform> Samplers()
+    {
+        GL gl = _device.Gl;
+        gl.GetProgram(_handle, ProgramPropertyARB.ActiveUniforms, out int count);
+        List<GpuSamplerUniform> samplers = [];
+        for (uint i = 0; i < count; i++)
+        {
+            string name = gl.GetActiveUniform(_handle, i, out _, out UniformType type);
+            GpuSamplerKind? kind = KindOf(type);
+            if (kind is null) continue;
+            gl.GetUniform(_handle, gl.GetUniformLocation(_handle, name), out int unit);
+            samplers.Add(new GpuSamplerUniform(name, kind.Value, unit));
+        }
+
+        _device.Check("GpuProgram.Samplers", Name);
+        return samplers;
+    }
+
     public void Dispose()
     {
         if (_handle == 0) return;
@@ -85,6 +104,18 @@ public sealed class GpuProgram : IDisposable
         gl.GetProgram(_handle, ProgramPropertyARB.LinkStatus, out int status);
         if (status == 0) throw new GpuException($"The program did not link:\n{gl.GetProgramInfoLog(_handle).TrimEnd()}", resource: name);
     }
+
+    private static GpuSamplerKind? KindOf(UniformType type) => type switch
+    {
+        UniformType.Sampler2D or UniformType.IntSampler2D or UniformType.UnsignedIntSampler2D => GpuSamplerKind.Texture2D,
+        UniformType.Sampler2DShadow => GpuSamplerKind.Texture2DShadow,
+        UniformType.Sampler2DArray or UniformType.IntSampler2DArray or UniformType.UnsignedIntSampler2DArray => GpuSamplerKind.Texture2DArray,
+        UniformType.Sampler3D or UniformType.IntSampler3D or UniformType.UnsignedIntSampler3D => GpuSamplerKind.Texture3D,
+        UniformType.SamplerCube or UniformType.IntSamplerCube or UniformType.UnsignedIntSamplerCube => GpuSamplerKind.TextureCube,
+        UniformType.Sampler1D or UniformType.Sampler1DShadow or UniformType.Sampler1DArray or UniformType.SamplerCubeShadow or UniformType.Sampler2DArrayShadow
+            or UniformType.Sampler2DRect or UniformType.Sampler2DRectShadow or UniformType.SamplerBuffer => GpuSamplerKind.Other,
+        _ => null,
+    };
 
     private static ShaderType Type(GpuShaderStage stage) => stage switch
     {
