@@ -14,6 +14,25 @@ public sealed class GpuDevice(GL gl)
 
     public GL Gl { get; } = gl;
 
+    public void Apply(DrawState state)
+    {
+        SetCap(EnableCap.DepthTest, state.DepthTest);
+        Gl.DepthMask(state.DepthWrite);
+        Gl.DepthFunc(state.DepthFunc switch
+        {
+            DepthFunc.Never => GLEnum.Never,
+            DepthFunc.Less => GLEnum.Less,
+            DepthFunc.Equal => GLEnum.Equal,
+            DepthFunc.LessOrEqual => GLEnum.Lequal,
+            DepthFunc.Greater => GLEnum.Greater,
+            DepthFunc.NotEqual => GLEnum.Notequal,
+            DepthFunc.GreaterOrEqual => GLEnum.Gequal,
+            _ => GLEnum.Always,
+        });
+        SetCap(EnableCap.CullFace, state.Cull != CullMode.None);
+        if (state.Cull != CullMode.None) Gl.CullFace(state.Cull switch { CullMode.Front => TriangleFace.Front, CullMode.Both => TriangleFace.FrontAndBack, _ => TriangleFace.Back });
+    }
+
     public void Check(string? pass = null, string? resource = null)
     {
         List<GLEnum> errors = [];
@@ -25,5 +44,11 @@ public sealed class GpuDevice(GL gl)
         }
 
         if (errors.Count > 0) throw new GpuException($"GL error: {string.Join(", ", errors)}", pass, resource);
+    }
+
+    private void SetCap(EnableCap cap, bool on)
+    {
+        if (on) Gl.Enable(cap);
+        else Gl.Disable(cap);
     }
 }
