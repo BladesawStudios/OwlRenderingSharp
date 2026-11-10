@@ -22,10 +22,25 @@ Still the neutral default, because a lone model has no scene to put in them: `gs
 
 ## Post chain
 
-`PostSettings` + `BloomPass` + `ResolvePass`: exposure, bloom (bright pass, quarter-size blur, composite), white balance, ACES curve and sRGB, applied per supersample, then FXAA. `OotPost` fills it from the palette (`BloomThreshold` in stops, `BloomIntensity`, `BloomComposePower`, `BloomClampedLuminance`, `WhiteBalanceTemperature/Tint`).
+The game's screen shaders are in `Shader/ApplicationPackage.*.sarc.zs` (open with `bfshader unpack`, which uses SarcSharp); its `AglShader.sharcb` entry goes through `bfshader prepare` like any archive and is added to the content as `Agl` (`--post-shaders <bfsp>` in the snapshot sample, `OWL_AGL_SHADERS` in the tests). `GamePostChain` runs its programs through `ShaderScreenPass`:
 
-Not the game's: the tone curve and the exposure (0.25), the stops reading of the threshold. The game's own post shaders are in `Shader/ApplicationPackage.*.sarc.zs`, whose decompressed magic is `S_Wo`, a container this library cannot open yet; `agl/ColorCorrectionParam/MainField` is `Enable: false` with a luminance-saturation (0.75) and a multiply-colour (1, 0.97, 0.85) step, and `agl/LocalExposureParam` is disabled.
+1. bloom (this library's `BloomPass`: threshold, clamp, quarter-size blur, intensity from the palette),
+2. `white_balance` (the palette's temperature and tint become a matrix in the game's own shader),
+3. `hdr_compose` program 1920 (power-form bloom compose + tone mapping): `min(M * hdr + offset, 10000) + |bloom|^power`, times the exposure, then the filmic curve `x(2.51x + 0.03) / (x(2.43x + 0.59) + 0.14)`; the options are `BLOOM_COMPOSE` x768, `TONEMAPPING` x384, `GAMMA` x128 in the program number,
+4. an sRGB-encoding box downsample of the supersampled frame, then FXAA.
+
+The compose block is `HdrComposeParam`: rows 0-2 the colour matrix (identity here), row 3 holds the bloom power in y and the exposure in z. The exposure is the one value not read from the game's data (0.25, chosen by eye). `agl/ColorCorrectionParam/MainField` is disabled and `LocalExposureParam` is off. Not done: the game's bloom generation (not in this archive), depth of field, `volume_fog`, `fog_pre_pass`, the SSAO and the screen-space shadow programs; `skin_shading_scatter` has no fragment stage (it is compute).
+
+## Alpha test
+
+The colour programs write alpha and leave the cutout to the hardware alpha test (`gsys_alpha_test_enable/func/value` render info); the depth-only programs discard on their own against `gsys_alpha_test_ref_value`. `GlslAlphaTest` adds the missing discard to every colour program, reading the compare function and reference from the support buffer (`alpha_test` and `tfe_offset.x`), which `ModelDrawer` writes per draw from `MaterialResources.AlphaTest`. Hair cards and the cap's fringe now cut out.
+
+## Reflection probe
+
+`SkyProbe` builds the cube the way the game's `hemi_to_env` program does: ground weight `clamp(0.5 - 0.5 * sign(y) * |y|^0.33)` between the hemisphere's two colours, in HDR float with mips; `ReflectionLod` is its last mip.
 
 ## Lead not yet applied
 
 `agl/DirectionalLightParam/dir_chara` is a white light of intensity 21.5 in view coordinates (direction 0, -0.62, 0.79) in group `main_env`, against `dir_main` 41.3 in world space; characters are probably lit by a camera-relative key light like this one rather than by the sun alone. The palette's `CharaLightIntensity` and `FieldObjCharaLightIntensity` are the probable multipliers.
+
+In Kokiri Forest at noon `CharaLightIntensity` is 0, so that light would not contribute there; it is left unapplied.

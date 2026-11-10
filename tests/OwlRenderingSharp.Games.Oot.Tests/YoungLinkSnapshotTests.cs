@@ -22,12 +22,15 @@ public class YoungLinkSnapshotTests
         using ContentSet content = new(new CollectingDiagnostics());
         content.AddPack(pack!);
         content.AddShaders("Model", shaders!);
+        string? post = Environment.GetEnvironmentVariable("OWL_AGL_SHADERS");
+        if (post is not null) content.AddShaders(GamePostChain.Archive, post);
         byte[] pixels = gl!.Run(device =>
         {
             using RenderServices services = new(device, content);
             using ModelResources model = new ModelResourcesBuilder(services).Build("Player_Child");
             using ModelDrawer drawer = new(services, new OotBlockProfile());
-            return ModelSnapshot.RenderSmooth(device, drawer, model, BindPoseCamera.Frame(model.Skeleton), Size, Size, new Vector4(0f, 0f, 0f, 1f));
+            using GamePostChain? chain = post is null ? null : new GamePostChain(services);
+            return ModelSnapshot.RenderSmooth(device, drawer, model, BindPoseCamera.Frame(model.Skeleton), Size, Size, new Vector4(0f, 0f, 0f, 1f), chain: chain);
         });
 
         // The corner is background; the smoothed image must also hold blended edge pixels between it and the model.
