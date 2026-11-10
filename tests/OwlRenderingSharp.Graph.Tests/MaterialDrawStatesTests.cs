@@ -33,6 +33,19 @@ public class MaterialDrawStatesTests
     }
 
     [Fact]
+    public void TheAlphaTestIsReadFromTheRenderInfoAndIsOffWhenNotEnabled()
+    {
+        MaterialRecord material = new("Model", "model", 0, 0, [],
+        [
+            new RenderInfoRecord("gsys_alpha_test_enable", 2, [], [], ["true"]),
+            new RenderInfoRecord("gsys_alpha_test_func", 2, [], [], ["gequal"]),
+            new RenderInfoRecord("gsys_alpha_test_value", 1, [], [0.35f], []),
+        ], [], [], [], ReadOnlyMemory<byte>.Empty, -1, -1);
+        Assert.Equal(new AlphaTest(OwlRenderingSharp.Content.Programs.GlslAlphaTest.GreaterOrEqual, 0.35f), MaterialDrawStates.AlphaTest(material));
+        Assert.Equal(default, MaterialDrawStates.AlphaTest(Material(("gsys_alpha_test_func", "gequal"))));
+    }
+
+    [Fact]
     public void AColorBlendModeReadsTheOperationsFactorsAndConstant()
     {
         MaterialRecord material = new("Model", "model", 0, 0, [],

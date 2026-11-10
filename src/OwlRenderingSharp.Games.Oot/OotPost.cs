@@ -21,7 +21,9 @@ public static class OotPost
         palette.GetFloat("BloomIntensity", 0f),
         palette.GetFloat("BloomComposePower", 1f),
         palette.GetFloat("BloomClampedLuminance", 10f),
-        WhiteBalance(palette.GetFloat("WhiteBalanceTemperature", 6500f), palette.GetFloat("WhiteBalanceTint", 0f)));
+        WhiteBalance(palette.GetFloat("WhiteBalanceTemperature", 6500f), palette.GetFloat("WhiteBalanceTint", 0f)),
+        palette.GetFloat("WhiteBalanceTemperature", 6500f),
+        palette.GetFloat("WhiteBalanceTint", 0f));
 
     public static Vector3 WhiteBalance(float temperature, float tint)
     {

@@ -4,7 +4,7 @@ namespace OwlRenderingSharp.Graph;
 
 /// <summary>Builds the bloom image of a linear HDR frame: the bright part at a quarter of the size, blurred.</summary>
 /// <remarks>
-/// The bright pass averages each four-by-four block of the source after the exposure, clamps each sample to the bloom clamp and keeps the share of it above the threshold; two separable
+/// The bright pass averages each four-by-four block of the source after the exposure, clamps each sample to the bloom clamp, keeps the share of it above the threshold, scales it by the intensity and returns it to the source's own unexposed units, since the compose adds it before the exposure; two separable
 /// nine-tap blurs then spread it. The result is returned as a texture the caller owns and disposes. It is used from the GL thread only and releases its programs with it.
 /// </remarks>
 public sealed class BloomPass(GpuDevice device) : IDisposable
@@ -26,7 +26,7 @@ public sealed class BloomPass(GpuDevice device) : IDisposable
                     float l = max(c.r, max(c.g, c.b));
                     sum += c * (max(l - p.y, 0.0) / max(l, 1e-4));
                 }
-            color = vec4(sum / 16.0, 1.0);
+            color = vec4(sum / 16.0 * (p.w / p.x), 1.0);
         }
         """;
 
@@ -64,7 +64,7 @@ public sealed class BloomPass(GpuDevice device) : IDisposable
         using GpuFramebuffer resultTarget = new(device, "bloom", [result]);
         using (GpuBuffer parameters = new(device, "bloom bright parameters", 16))
         {
-            parameters.Write<float>([settings.Exposure, settings.BloomThreshold, settings.BloomClamp, 0f]);
+            parameters.Write<float>([settings.Exposure, settings.BloomThreshold, settings.BloomClamp, settings.BloomIntensity]);
             _bright.Run(brightTarget, [hdr], parameters);
         }
 

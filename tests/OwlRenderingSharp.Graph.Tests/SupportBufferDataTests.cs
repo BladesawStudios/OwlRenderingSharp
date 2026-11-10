@@ -22,4 +22,13 @@ public class SupportBufferDataTests
         Assert.Equal(400f, BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(164)));
         Assert.Equal(1, BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(176)));
     }
+
+    [Fact]
+    public void TheAlphaTestIsTheCompareWordAndTheReferenceInTheTexelFetchOffset()
+    {
+        byte[] bytes = SupportBufferData.Create(64, 64, new AlphaTest(7, 0.5f));
+        Assert.Equal(7u, BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(0)));
+        Assert.Equal(0.5f, BinaryPrimitives.ReadSingleLittleEndian(bytes.AsSpan(1360)));
+        Assert.Equal(0u, BinaryPrimitives.ReadUInt32LittleEndian(SupportBufferData.Create(64, 64).AsSpan(0)));
+    }
 }

@@ -25,6 +25,7 @@ CollectingDiagnostics diagnostics = new();
 using ContentSet content = new(diagnostics);
 content.AddPack(args[0]);
 content.AddShaders("Model", args[1]);
+if (Option("--post-shaders") is { } postShaders) content.AddShaders(GamePostChain.Archive, postShaders);
 using HeadlessGl? gl = HeadlessGl.TryCreate();
 if (gl is null)
 {
@@ -166,12 +167,13 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
     using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, sky, ground);
     SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), probe?.Textures);
-    Vector4 background = new(0.2f, 0.3f, 0.4f, 1f);
+    Vector4 background = new(0f, 0f, 0f, 1f);
+    using GamePostChain? chain = Option("--post-shaders") is null || args.Contains("--plain-post") ? null : new GamePostChain(services);
     byte[] image = args.Contains("--raw")
         ? ModelSnapshot.Render(device, drawer, shown, camera, width, height, background, scene)
         : args.Contains("--plain")
             ? FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"))
-            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? "0.25")) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"));
+            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? "0.25")) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"), chain);
     if (shadows is not null)
         for (int c = 0; c < shadows.Cascades.Count; c++)
         {

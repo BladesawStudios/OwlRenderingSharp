@@ -9,7 +9,7 @@ namespace OwlRenderingSharp.Games.Oot.Tests;
 /// <summary>Draws Young Link, supersampled and smoothed as every snapshot is, from a real pack and shader archive when the machine has them: set OWL_OOT_PACK to a pack made with linear textures and OWL_OOT_SHADERS to the model shader archive.</summary>
 public class YoungLinkSnapshotTests
 {
-    private const int Size = 256;
+    private const int Size = 512;
 
     [SkippableFact]
     public void YoungLinkDrawsSomethingOverTheBackground()
@@ -27,7 +27,7 @@ public class YoungLinkSnapshotTests
             using RenderServices services = new(device, content);
             using ModelResources model = new ModelResourcesBuilder(services).Build("Player_Child");
             using ModelDrawer drawer = new(services, new OotBlockProfile());
-            return ModelSnapshot.RenderSmooth(device, drawer, model, BindPoseCamera.Frame(model.Skeleton), Size, Size, new Vector4(0.2f, 0.3f, 0.4f, 1f));
+            return ModelSnapshot.RenderSmooth(device, drawer, model, BindPoseCamera.Frame(model.Skeleton), Size, Size, new Vector4(0f, 0f, 0f, 1f));
         });
 
         // The corner is background; the smoothed image must also hold blended edge pixels between it and the model.

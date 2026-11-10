@@ -35,6 +35,14 @@ public static class MaterialDrawStates
     // Whether the draw blends decides where it is sorted, so the drawer asks the same question of a record.
     public static bool Blends(MaterialRecord material) => Text(material, "gsys_render_state_blend_mode") == "color" || (IsTranslucent(material) && Text(material, "gsys_render_state_blend_mode") is not ("none" or "logic"));
 
+    /// <summary>The alpha test the material asks for: the compare function of <c>gsys_alpha_test_func</c> against <c>gsys_alpha_test_value</c>, or off.</summary>
+    public static AlphaTest AlphaTest(MaterialRecord material)
+    {
+        if (Text(material, "gsys_alpha_test_enable") is not "true") return default;
+        float[] value = material.RenderInfos.FirstOrDefault(r => r.Name == "gsys_alpha_test_value")?.Floats ?? [];
+        return new AlphaTest(RenderStateWords.AlphaFunction(Text(material, "gsys_alpha_test_func")), value.Length > 0 ? value[0] : 0.5f);
+    }
+
     // The draw order among materials of the same kind: lower first.
     public static int Priority(MaterialRecord material) => material.RenderInfos.FirstOrDefault(r => r.Name == "gsys_priority")?.Ints.FirstOrDefault() ?? 0;
 

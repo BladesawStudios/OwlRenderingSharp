@@ -11,8 +11,21 @@ public sealed class GpuScreenPass : IDisposable
 {
     private const string Vertex = "#version 450 core\nout vec2 uv;\nvoid main()\n{\n    vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);\n    uv = p;\n    gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);\n}\n";
 
+    /// <summary>A vertex stage for a decompiled game fragment program: the fullscreen triangle with its texture coordinate in <c>out_attr0</c>, where the game's own vertex stage puts it.</summary>
+    public const string GameVertex = """
+        #version 450 core
+        layout (location = 0) out vec4 out_attr0;
+        void main()
+        {
+            vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+            out_attr0 = vec4(p, 0.0, 1.0);
+            gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+        }
+        """;
+
     private readonly GpuDevice _device;
     private readonly GpuProgram _program;
+    private readonly bool _ownsProgram = true;
     private readonly GpuVertexArray _vertices;
     private readonly GpuSampler _sampler;
 
@@ -25,12 +38,26 @@ public sealed class GpuScreenPass : IDisposable
         _sampler = new GpuSampler(device, name, SamplerState.LinearClamp);
     }
 
+    /// <summary>A pass over a program the caller linked (its vertex stage <see cref="GameVertex"/>); the pass does not dispose it.</summary>
+    public GpuScreenPass(GpuDevice device, string name, GpuProgram program)
+    {
+        _device = device;
+        Name = name;
+        _program = program;
+        _ownsProgram = false;
+        _vertices = new GpuVertexArray(device, name);
+        _sampler = new GpuSampler(device, name, SamplerState.LinearClamp);
+    }
+
     public string Name { get; }
 
     public void Run(GpuFramebuffer target, IReadOnlyList<GpuTexture> inputs, GpuBuffer? parameters = null) => Run(target, [.. inputs.Select(i => i.Handle)], parameters);
 
     /// <summary>The same with GL texture handles as inputs, for textures that are not 2D colour textures (such as a depth array read with <c>texelFetch</c>).</summary>
-    public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, GpuBuffer? parameters = null)
+    public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, GpuBuffer? parameters = null) => Run(target, inputs, parameters is null ? [] : [(0u, parameters)]);
+
+    /// <summary>The same with several uniform buffers, each at its binding point; the inputs are bound at the texture units the program's samplers name (a zero handle leaves a unit empty).</summary>
+    public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, IReadOnlyList<(uint Binding, GpuBuffer Buffer)> blocks)
     {
         GL gl = _device.Gl;
         _device.Apply(new DrawState(CullMode.None, false, false, DepthFunc.Always, BlendState.Off));
@@ -39,11 +66,12 @@ public sealed class GpuScreenPass : IDisposable
         gl.UseProgram(_program.Handle);
         for (int i = 0; i < inputs.Count; i++)
         {
+            if (inputs[i] == 0) continue;
             gl.BindTextureUnit((uint)i, inputs[i]);
             gl.BindSampler((uint)i, _sampler.Handle);
         }
 
-        if (parameters is not null) gl.BindBufferBase(BufferTargetARB.UniformBuffer, 0, parameters.Handle);
+        foreach ((uint binding, GpuBuffer buffer) in blocks) gl.BindBufferBase(BufferTargetARB.UniformBuffer, binding, buffer.Handle);
         gl.BindVertexArray(_vertices.Handle);
         gl.DrawArrays(PrimitiveType.Triangles, 0, 3);
         _device.Check("GpuScreenPass.Run", Name);
@@ -53,6 +81,6 @@ public sealed class GpuScreenPass : IDisposable
     {
         _sampler.Dispose();
         _vertices.Dispose();
-        _program.Dispose();
+        if (_ownsProgram) _program.Dispose();
     }
 }

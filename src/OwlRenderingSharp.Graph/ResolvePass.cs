@@ -29,8 +29,8 @@ public sealed class ResolvePass(GpuDevice device) : IDisposable
                 {
                     ivec2 at = origin + ivec2(i, j);
                     vec4 s = texelFetch(hdr, at, 0);
-                    vec3 glow = pow(max(texture(bloom, (vec2(at) + 0.5) / size).rgb, 0.0), vec3(bloomParams.y)) * bloomParams.x;
-                    sum += vec4(srgb(curve((max(s.rgb, 0.0) * p.x + glow) * balance.rgb)), clamp(s.a, 0.0, 1.0));
+                    vec3 glow = bloomParams.x * pow(max(texture(bloom, (vec2(at) + 0.5) / size).rgb, 0.0), vec3(bloomParams.y));
+                    sum += vec4(srgb(curve((max(s.rgb, 0.0) + glow) * p.x * balance.rgb)), clamp(s.a, 0.0, 1.0));
                 }
             color = sum / float(factor * factor);
         }
@@ -48,7 +48,7 @@ public sealed class ResolvePass(GpuDevice device) : IDisposable
         using BloomPass bloomPass = new(device);
         using GpuTexture? bloom = settings.BloomIntensity > 0f ? bloomPass.Run(hdr, settings) : null;
         using GpuBuffer parameters = new(device, "resolve parameters", 48);
-        parameters.Write<float>([settings.Exposure, factor, 0f, 0f, settings.Balance.X, settings.Balance.Y, settings.Balance.Z, 0f, bloom is null ? 0f : settings.BloomIntensity, settings.BloomPower, 0f, 0f]);
+        parameters.Write<float>([settings.Exposure, factor, 0f, 0f, settings.Balance.X, settings.Balance.Y, settings.Balance.Z, 0f, bloom is null ? 0f : 1f, settings.BloomPower, 0f, 0f]);
         _pass.Run(target, [hdr, bloom ?? hdr], parameters);
     }
 

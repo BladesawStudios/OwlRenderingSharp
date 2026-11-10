@@ -1,3 +1,4 @@
+using OwlRenderingSharp.Content.Programs;
 using OwlRenderingSharp.Gpu;
 
 namespace OwlRenderingSharp.Graph;
@@ -56,6 +57,19 @@ public static class RenderStateWords
         "gequal" or "greater_equal" => DepthFunc.GreaterOrEqual,
         "always" => DepthFunc.Always,
         _ => fallback,
+    };
+
+    public static uint AlphaFunction(string? word) => word switch
+    {
+        "never" => GlslAlphaTest.Never,
+        "less" => GlslAlphaTest.Less,
+        "equal" => GlslAlphaTest.Equal,
+        "lequal" or "less_equal" => GlslAlphaTest.LessOrEqual,
+        "greater" => GlslAlphaTest.Greater,
+        "notequal" or "not_equal" => GlslAlphaTest.NotEqual,
+        "gequal" or "greater_equal" => GlslAlphaTest.GreaterOrEqual,
+        "always" => GlslAlphaTest.Always,
+        _ => GlslAlphaTest.Off,
     };
 
     public static LogicOp Logic(string? word, LogicOp fallback = LogicOp.Copy) => word switch

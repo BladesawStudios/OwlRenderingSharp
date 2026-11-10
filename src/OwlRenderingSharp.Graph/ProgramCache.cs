@@ -38,7 +38,7 @@ public sealed class ProgramCache(GpuDevice device, ContentSet content, BlockBind
     {
         PreparedModel model = content.Shaders(archiveName).Model(shadingModel) ?? throw new BfShaderFormatException($"{archiveName} has no shading model {shadingModel}");
         if (program < 0 || program >= model.ProgramCount) throw new BfShaderFormatException($"{archiveName}/{shadingModel} has no program {program}");
-        string? vertex = Compatible(model.Glsl(program, ShaderStage.Vertex)), fragment = Compatible(model.Glsl(program, ShaderStage.Fragment));
+        string? vertex = Compatible(model.Glsl(program, ShaderStage.Vertex)), fragment = Compatible(model.Glsl(program, ShaderStage.Fragment)) is { } plain ? GlslAlphaTest.Apply(plain) : null;
         Dictionary<GpuShaderStage, string> sources = [];
         if (vertex is not null) sources[GpuShaderStage.Vertex] = vertex;
         if (fragment is not null) sources[GpuShaderStage.Fragment] = fragment;

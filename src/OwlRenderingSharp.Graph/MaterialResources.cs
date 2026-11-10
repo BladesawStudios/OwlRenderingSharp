@@ -28,6 +28,8 @@ public sealed class MaterialResources(string name, MaterialRecord record, Progra
 
     public int Priority { get; } = MaterialDrawStates.Priority(record);
 
+    public AlphaTest AlphaTest { get; } = MaterialDrawStates.AlphaTest(record);
+
     public MaterialPass? Pass(RenderPass pass, int skinCount)
     {
         if (!_passes.TryGetValue((pass, skinCount), out MaterialPass? found)) _passes[(pass, skinCount)] = found = builder.CreatePass(Name, Record, pass, skinCount);

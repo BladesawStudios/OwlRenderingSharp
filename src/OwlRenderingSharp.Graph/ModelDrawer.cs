@@ -65,6 +65,7 @@ public sealed class ModelDrawer : IDisposable
         MaterialPass? chosen = material.Pass(pass, shape.Record.SkinCount);
         if (chosen is null) return;
         ShapeInfo info = new(shape.Name, shape.Record, shape.BoneIndex, model.Skeleton, world);
+        _support.Write<byte>(SupportBufferData.Create(frame.Width, frame.Height, material.AlphaTest));
         Prepare(model.Name, material, chosen.Program, info, frame, frameBlocks);
         _services.Device.Apply(PassState(material.State, pass));
         foreach (TextureUnit unit in chosen.Units)
