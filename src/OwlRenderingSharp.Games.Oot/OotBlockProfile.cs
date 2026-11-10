@@ -22,6 +22,9 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
     // The lighting the environment block is filled from; the host changes it as the place or the time of day does.
     public OotEnvironment Environment { get; set; } = environment;
 
+    // A multiplier on the sun's colour and the key and rim lights built from it; 1 is the palette's own level.
+    public float SunScale { get; set; } = 1f;
+
     public BlockScope Scope(string block) => block switch
     {
         "gsys_material" => BlockScope.Material,
@@ -41,7 +44,7 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
                 FillContext(writer, frame);
                 break;
             case OotBlockLayouts.Environment:
-                OotLights.Fill(writer, Environment);
+                OotLights.Fill(writer, Environment, SunScale);
                 FillVolumes(writer, frame);
                 break;
             case OotBlockLayouts.SceneMaterial:

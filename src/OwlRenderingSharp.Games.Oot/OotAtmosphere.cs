@@ -13,10 +13,13 @@ public static class OotAtmosphere
 {
     public const float FocalDistance = 50f, FocalRange = 50f, MaxBlurRadius = 6f;
 
-    public static SnapshotScene.FogSettings Fog(EnvPalette palette) => new(
-        palette.GetColor("FogColor", Vector4.Zero),
-        palette.GetFloat("FogStart", 0f),
-        palette.GetFloat("FogEnd", 600f));
+    /// <summary>The palette's fog; <paramref name="density"/> multiplies how thick it is by dividing the distance from where it starts to where it is full (1 is the palette's own, 0 or less is no fog).</summary>
+    public static SnapshotScene.FogSettings? Fog(EnvPalette palette, float density = 1f)
+    {
+        if (density <= 0f) return null;
+        float start = palette.GetFloat("FogStart", 0f), end = palette.GetFloat("FogEnd", 600f);
+        return new(palette.GetColor("FogColor", Vector4.Zero), start, start + (end - start) / density);
+    }
 
     public static SnapshotScene.FocusSettings Focus(float supersample = 1f) => new(FocalDistance, FocalRange, MaxBlurRadius * supersample);
 }

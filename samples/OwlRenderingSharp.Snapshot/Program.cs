@@ -125,7 +125,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         }
     }
 
-    OotBlockProfile profile = new(new OotBlockLayouts(), Environment());
+    OotBlockProfile profile = new(new OotBlockLayouts(), Environment()) { SunScale = float.Parse(Option("--sun-scale") ?? "1") };
     IBlockProfile active = profile;
     if (args.Contains("--slots")) new SlotAudit(content, profile).Run(model, new FrameInfo(BindPoseCamera.Frame(model.Skeleton), width, height), Console.Out);
     if (Option("--list-places") is { } listRomfs)
@@ -174,6 +174,9 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         drawer.SetLightProbes(shEntry);
     }
 
+    if (Option("--wet") is { } wet)
+        WetnessControl.Apply(model, wet == "auto" ? profile.Environment.Palette.GetFloat("HumidityWetRatio", 0f) : float.Parse(wet));
+
     Camera camera = BindPoseCamera.Frame(model.Skeleton);
     if (Option("--zoom") is { } zoom) camera.Eye = camera.Target + (camera.Eye - camera.Target) / float.Parse(zoom);
     if (Option("--eye") is { } eye) camera.Eye = Vector(eye);
@@ -197,7 +200,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
     (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "5"), float.Parse(Option("--sky-cool") ?? "0.7"));
     using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "1"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun, CatchLight(camera, probeSky));
-    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), Overrides(device, probe?.Textures), float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
+    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), Overrides(device, probe?.Textures), float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette, float.Parse(Option("--fog-scale") ?? "1")), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
     float[] bg = [.. (Option("--background") ?? "0,0,0").Split(',').Select(float.Parse)];
     Vector4 background = new(bg[0], bg[1], bg[2], 1f);
     using GamePostChain? chain = Option("--post-shaders") is null || args.Contains("--plain-post") ? null : new GamePostChain(services);

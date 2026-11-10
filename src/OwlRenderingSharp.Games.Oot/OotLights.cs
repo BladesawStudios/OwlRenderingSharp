@@ -29,12 +29,12 @@ public static class OotLights
 
     private static readonly Vector4 Ambient = new(0.10f, 0.11f, 0.13f, 1f);
 
-    public static void Fill(BlockWriter writer, OotEnvironment environment)
+    public static void Fill(BlockWriter writer, OotEnvironment environment, float sunScale = 1f)
     {
         EnvPalette palette = environment.Palette;
         float exposure = 1f / MathF.Pow(2f, palette.GetFloat("ExposureValue", DefaultExposure));
         Vector4 diffuse = palette.GetColor("BgDifColor", Vector4.One);
-        Vector3 sun = new Vector3(diffuse.X, diffuse.Y, diffuse.Z) * palette.GetFloat("BgDifIntensity", 1f / exposure) * exposure;
+        Vector3 sun = new Vector3(diffuse.X, diffuse.Y, diffuse.Z) * palette.GetFloat("BgDifIntensity", 1f / exposure) * exposure * sunScale;
         (Vector3 sky, Vector3 ground) = SkyColors(environment);
 
         writer.Set("SunColor", new Vector4(sun, 1f)).Set("LightColor0", new Vector4(sun, 1f));
