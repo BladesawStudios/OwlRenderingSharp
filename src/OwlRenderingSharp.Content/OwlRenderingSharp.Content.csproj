@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BymlLibrary" Version="2.1.18" />
+    <PackageReference Include="SarcLibrary" Version="3.3.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OwlRenderingSharp.Core\OwlRenderingSharp.Core.csproj" />
     <ProjectReference Include="..\..\vendor\BfShaderSharp\src\BfShaderSharp\BfShaderSharp.csproj" />
     <ProjectReference Include="..\..\vendor\BfShaderSharp\lib\vendor\BfresSharp\lib\vendor\TexSharp\src\TexSharp\TexSharp.csproj" />
