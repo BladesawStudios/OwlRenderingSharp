@@ -195,7 +195,7 @@ void Ablate(GpuDevice device, RenderServices services, ModelResources model, Oot
     long Whites(IBlockProfile p)
     {
         using ModelDrawer drawer = new(services, p);
-        byte[] pixels = ModelSnapshot.Render(device, drawer, shown, camera, 256, 256, new Vector4(0.2f, 0.3f, 0.4f, 1f));
+        byte[] pixels = ModelSnapshot.RenderSmooth(device, drawer, shown, camera, 256, 256, new Vector4(0.2f, 0.3f, 0.4f, 1f));
         long sum = 0;
         for (int i = 0; i < pixels.Length; i += 4) if (!(pixels[i] == 51 && pixels[i + 1] == 77)) sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
         return sum;
@@ -218,7 +218,7 @@ void Sweep(GpuDevice device, RenderServices services, ModelResources model, OotB
     long Brightness(IBlockProfile p)
     {
         using ModelDrawer drawer = new(services, p);
-        byte[] pixels = ModelSnapshot.Render(device, drawer, model, camera, 128, 128, background);
+        byte[] pixels = ModelSnapshot.RenderSmooth(device, drawer, model, camera, 128, 128, background);
         long sum = 0;
         for (int i = 0; i < pixels.Length; i += 4) sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
         return sum;
