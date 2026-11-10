@@ -80,6 +80,15 @@ public sealed unsafe class GpuTexture : IDisposable
         return pixels;
     }
 
+    /// <summary>Makes a one-channel texture read as (r, r, r, 1), the way the console samples one, instead of GL's (r, 0, 0, 1).</summary>
+    public void ReplicateRed()
+    {
+        _device.Gl.TextureParameter(_handle, TextureParameterName.TextureSwizzleG, (int)GLEnum.Red);
+        _device.Gl.TextureParameter(_handle, TextureParameterName.TextureSwizzleB, (int)GLEnum.Red);
+        _device.Gl.TextureParameter(_handle, TextureParameterName.TextureSwizzleA, (int)GLEnum.One);
+        _device.Check("GpuTexture.ReplicateRed", Name);
+    }
+
     public void GenerateMips()
     {
         _device.Gl.GenerateTextureMipmap(_handle);

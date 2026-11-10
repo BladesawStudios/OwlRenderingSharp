@@ -3,7 +3,7 @@ using OwlRenderingSharp.Content.Textures;
 namespace OwlRenderingSharp.Gpu;
 
 /// <summary>Creates a <see cref="GpuTexture"/> from a <see cref="DecodedTexture"/> and uploads every mip level.</summary>
-/// <remarks>The texture has the decoded texture's mip count and no mips are generated; block-compressed levels go up as the game stored them.</remarks>
+/// <remarks>The texture has the decoded texture's mip count and no mips are generated; block-compressed levels go up as the game stored them. A one-channel BC4 texture reads as grey (r, r, r), because the programs read the metalness and roughness maps as colour.</remarks>
 public static class GpuTextureLoader
 {
     public static GpuTexture Create(GpuDevice device, string name, DecodedTexture texture)
@@ -16,6 +16,7 @@ public static class GpuTextureLoader
             else gpu.Upload<byte>(texture.Levels[level], level);
         }
 
+        if (format is GpuFormat.Bc4 or GpuFormat.Bc4Snorm) gpu.ReplicateRed();
         return gpu;
     }
 
