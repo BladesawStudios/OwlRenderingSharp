@@ -8,13 +8,18 @@ namespace OwlRenderingSharp.Games.Oot;
 /// <remarks>
 /// The palette gives its lights in physical units that its exposure value brings back to a working range, so the sun is its diffuse colour times its intensity divided
 /// by two to the power of the exposure value (a palette of intensity 10000 at exposure 10 gives a sun near 9.8). The hemisphere light is its top and bottom colours times the hemisphere
-/// intensity, unscaled. TODO: whether the hemisphere intensity is also in exposure units (the palette marks it exposure-linked) is not checked against a render.
+/// intensity times <see cref="HemiScale"/>. The palette marks the hemisphere intensity as exposure-linked, but how is unknown; at its full value (8 against a sun of 9.8) the ambient is nearly as strong as the sun and flattens every surface,
+/// so the scale is a visual choice that keeps the sun the main light, to be replaced once the real conversion is found.
 /// The main light is written as the direction it travels in world space, the negative of the direction to the sun. Azimuth is measured from +z toward +x and elevation up
 /// from the horizon; both are assumptions until a render shows the shadows fall the right way. The ambient colour is fixed, as in WildRenderingSharp.
 /// </remarks>
 public static class OotLights
 {
     private const float DefaultExposure = 10f;
+
+    /// <summary>What the palette's hemisphere intensity is multiplied by; chosen by eye (0.4 keeps the sun's shading visible, 1 flattens it).</summary>
+    public const float HemiScale = 0.4f;
+
     private static readonly Vector4 Ambient = new(0.10f, 0.11f, 0.13f, 1f);
 
     public static void Fill(BlockWriter writer, OotEnvironment environment)
@@ -38,7 +43,7 @@ public static class OotLights
         EnvPalette palette = environment.Palette;
         float hemi = palette.GetFloat("HemiLightIntensity", 1f);
         Vector4 top = palette.GetColor("HemiLightColorTop", Vector4.One), bottom = palette.GetColor("HemiLightColorBottom", new Vector4(0.5f, 0.5f, 0.5f, 1f));
-        return (new Vector3(top.X, top.Y, top.Z) * hemi, new Vector3(bottom.X, bottom.Y, bottom.Z) * hemi);
+        return (new Vector3(top.X, top.Y, top.Z) * hemi * HemiScale, new Vector3(bottom.X, bottom.Y, bottom.Z) * hemi * HemiScale);
     }
 
     // The slots with no palette field behind them yet, set to values that leave their terms inert.

@@ -26,11 +26,11 @@ public class OotLightsTests
     }
 
     [Fact]
-    public void TheHemisphereIsItsColorsTimesItsIntensity()
+    public void TheHemisphereIsItsColorsTimesItsIntensityAndTheScale()
     {
         EnvPalette palette = Palette(("HemiLightIntensity", 2.0), ("HemiLightColorTop", new object?[] { 0.5, 0.25, 1.0 }));
         Vector4 sky = Fill(new OotEnvironment(palette, 0, 45)).GetVector4("HemiSky");
-        Assert.Equal(new Vector4(1f, 0.5f, 2f, 1f), sky);
+        Assert.Equal(new Vector4(new Vector3(1f, 0.5f, 2f) * OotLights.HemiScale, 1f), sky);
     }
 
     [Fact]
@@ -64,8 +64,8 @@ public class OotLightsTests
     public void TheSkyColoursAreTheHemisphereLightsAndFeedTheEnvironmentBlock()
     {
         (System.Numerics.Vector3 sky, System.Numerics.Vector3 ground) = OotLights.SkyColors(OotEnvironment.Neutral);
-        Assert.Equal(System.Numerics.Vector3.One, sky);
-        Assert.Equal(new System.Numerics.Vector3(0.5f), ground);
+        Assert.Equal(System.Numerics.Vector3.One * OotLights.HemiScale, sky);
+        Assert.Equal(new System.Numerics.Vector3(0.5f) * OotLights.HemiScale, ground);
         BlockWriter writer = new(new OotBlockLayouts().Find("gsys_environment")!);
         OotLights.Fill(writer, OotEnvironment.Neutral);
         Assert.Equal(new System.Numerics.Vector4(sky, 1f), writer.GetVector4("HemiSky"));
