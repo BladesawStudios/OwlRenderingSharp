@@ -68,18 +68,27 @@ public static class ModelSnapshot
         if (prepass is not null) textures[ShadowPrepass.SamplerName] = prepass.Texture;
         scene = scene with { Textures = textures };
         using GpuTexture depth = new(device, "snapshot depth", GpuFormat.Depth32F, width, height);
-        bool fallback = scene.OcclusionStrength > 0f && chain is null;
-        using GpuTexture? unoccluded = fallback ? new GpuTexture(device, "snapshot unoccluded", color.Format, width, height) : null;
-        using GpuFramebuffer target = new(device, "snapshot", [unoccluded ?? color], depth);
+        ModelResources? skin = scene.Subsurface is null ? null : Skin(model, scene.SkinMaterials);
+        bool effects = ScreenEffects.Needed(scene, chain is not null, skin is not null);
+        using GpuTexture? lit = effects ? new GpuTexture(device, "snapshot lit", color.Format, width, height) : null;
+        using GpuFramebuffer target = new(device, "snapshot", [lit ?? color], depth);
         commands.UseZeroToOneDepth();
         commands.Target(target, width, height);
         commands.Clear(background.X, background.Y, background.Z, background.W);
         drawer.Draw(model, scene.Frame(camera, width, height), world);
         device.Check("ModelSnapshot.Render", model.Name);
-        if (!fallback) return;
-        using GpuFramebuffer occluded = new(device, "snapshot occluded", [color]);
-        using AmbientOcclusionPass pass = new(device);
-        pass.Run(unoccluded!, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, occluded);
+        if (!effects) return;
+        using GpuTexture? skinDepth = skin is null ? null : new GpuTexture(device, "snapshot skin depth", GpuFormat.Depth32F, width, height);
+        if (skin is not null) RenderViewDepth(device, drawer, skin, camera, color, skinDepth!, world, commands);
+        new ScreenEffects(device).Run(lit!, viewDepth, skinDepth, camera, scene, chain is not null, color);
+    }
+
+    // The shapes whose material names mark them as skin, as a model of their own; null when there are none.
+    private static ModelResources? Skin(ModelResources model, IReadOnlyList<string>? markers)
+    {
+        if (markers is null) return null;
+        ShapeResources[] shapes = [.. model.Shapes.Where(s => markers.Any(m => model.Materials[s.MaterialIndex].Name.Contains(m, StringComparison.Ordinal)))];
+        return shapes.Length == 0 ? null : new ModelResources(model.Name, model.Skeleton, shapes, model.Materials);
     }
 
     // The depth image of the view: the opaque shapes drawn with no colour, into a scratch colour target.

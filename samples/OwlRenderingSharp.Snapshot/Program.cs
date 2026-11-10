@@ -173,7 +173,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     Vector3 toSun = OotLights.ToSun(profile.Environment);
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
     using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, sky, ground);
-    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), probe?.Textures, float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"));
+    SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), probe?.Textures, float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
     Vector4 background = new(0f, 0f, 0f, 1f);
     using GamePostChain? chain = Option("--post-shaders") is null || args.Contains("--plain-post") ? null : new GamePostChain(services);
     byte[] image = args.Contains("--raw")

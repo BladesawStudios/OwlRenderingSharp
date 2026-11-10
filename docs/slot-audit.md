@@ -60,3 +60,11 @@ The game's `shadow_pre_pass_merge` (the variant with a depth shadow and an occlu
 `ShadowPrepass` now writes that layout: red is the game's SSAO result (`SsaoChain`), green the sun visibility from this library's cascades, so the shading programs read the occlusion where the game's do. The merge program itself is not run:
 its inputs are the same context fields the shading pass already gets, but its static-shadow and edge-adjust variants have no data here.
 The screen archive of this build has no depth-of-field program and `skin_shading_scatter` is an empty stub (no compute or fragment code), so there is nothing to run for those; `volume_fog` and `fog_pre_pass` exist but the KokiriForest noon palette makes them neutral for a lone character.
+
+### Library-made effects where the archive has no program
+
+- `SubsurfacePass`: separable screen-space skin scatter (per-channel widths in metres, depth and skin-mask rejected taps; the skin mask is the depth image of the shapes whose material names contain `Mt_Skin` or `Mt_Face`, compared with the view depth). `--sss <strength>` / `--no-sss`.
+- `DepthFogPass`: linear distance fog from the palette's `FogColor` (alpha scales it), `FogStart`, `FogEnd`; zero in KokiriForest noon. The game's froxel `volume_fog` is not run. `--no-fog`.
+- `DepthOfFieldPass`: gather blur beyond focal distance +/- range (50/50 m default; those values are not in the place palettes). `--no-dof`.
+- `ScreenEffects` orders them (fallback occlusion, scatter, fog, depth of field) over the lit HDR image before the game's post chain.
+- The SSAO result is smoothed by the game's bilateral program, vertical then horizontal (program 1); weights and depth sharpness (30) are mine/the engine default.
