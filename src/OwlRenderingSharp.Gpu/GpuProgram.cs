@@ -5,8 +5,8 @@ namespace OwlRenderingSharp.Gpu;
 /// <summary>A linked GL program built from GLSL source per stage.</summary>
 /// <remarks>
 /// Building compiles each stage and links them; a failure throws a <see cref="GpuException"/> naming the program and the stage, with the driver's log and the
-/// source lines it points at (see <see cref="ShaderLogExcerpt"/>). Stage objects are deleted once linked. Uniform blocks are bound to slots by name; a name the
-/// program does not declare is an error, since a renderer that binds a block the shader does not read has the wrong shader.
+/// source lines it points at (see <see cref="ShaderLogExcerpt"/>). Stage objects are deleted once linked. Uniform blocks are bound to slots by name; <see cref="BindUniformBlock"/> treats a name the program does not declare as an
+/// error, and <see cref="TryBindUniformBlock"/> reports it, since the compiler removes blocks the code never reads.
 /// </remarks>
 public sealed class GpuProgram : IDisposable
 {
@@ -54,10 +54,17 @@ public sealed class GpuProgram : IDisposable
 
     public void BindUniformBlock(string blockName, uint slot)
     {
+        if (!TryBindUniformBlock(blockName, slot)) throw new GpuException($"The program declares no uniform block {blockName}", resource: Name);
+    }
+
+    // The compiler drops a block the code never reads; this reports that instead of failing, for callers that bind every block a program declares.
+    public bool TryBindUniformBlock(string blockName, uint slot)
+    {
         uint index = _device.Gl.GetUniformBlockIndex(_handle, blockName);
-        if (index == uint.MaxValue) throw new GpuException($"The program declares no uniform block {blockName}", resource: Name);
+        if (index == uint.MaxValue) return false;
         _device.Gl.UniformBlockBinding(_handle, index, slot);
         _device.Check("GpuProgram.BindUniformBlock", Name);
+        return true;
     }
 
     // The sampler uniforms the linked program kept, each with the texture unit its binding qualifier fixes.
