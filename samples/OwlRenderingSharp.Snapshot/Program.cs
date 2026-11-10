@@ -171,7 +171,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         ? ModelSnapshot.Render(device, drawer, shown, camera, width, height, background, scene)
         : args.Contains("--plain")
             ? FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"))
-            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, float.Parse(Option("--exposure") ?? "0.25"), int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"));
+            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? "0.25")) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"));
     if (shadows is not null)
         for (int c = 0; c < shadows.Cascades.Count; c++)
         {

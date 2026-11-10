@@ -18,13 +18,13 @@ public static class ModelSnapshot
         Draw(device, drawer, model, camera, width, height, background, scene, GpuFormat.Rgba16F, t => t.DownloadAsFloats());
 
     /// <summary>Draws at <paramref name="supersample"/> times the size, tone maps and averages down to the requested size, then smooths the edges with <see cref="FxaaPass"/> unless <paramref name="fxaa"/> is off.</summary>
-    public static byte[] RenderSmooth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null, float exposure = 0.25f, int supersample = 2, bool fxaa = true)
+    public static byte[] RenderSmooth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null, PostSettings? post = null, int supersample = 2, bool fxaa = true)
     {
         using GpuTexture hdr = new(device, "snapshot hdr", GpuFormat.Rgba16F, width * supersample, height * supersample);
         DrawInto(device, drawer, model, camera, hdr, background, scene);
         using GpuTexture resolved = new(device, "snapshot resolved", GpuFormat.Rgba8, width, height);
         using GpuFramebuffer resolvedTarget = new(device, "snapshot resolved", [resolved]);
-        using (ResolvePass resolve = new(device)) resolve.Run(hdr, supersample, exposure, resolvedTarget);
+        using (ResolvePass resolve = new(device)) resolve.Run(hdr, supersample, post ?? new PostSettings(), resolvedTarget);
         if (!fxaa) return TopRowFirst(resolved.Download<byte>(), width, height);
         using GpuTexture smoothed = new(device, "snapshot smoothed", GpuFormat.Rgba8, width, height);
         using GpuFramebuffer smoothedTarget = new(device, "snapshot smoothed", [smoothed]);
