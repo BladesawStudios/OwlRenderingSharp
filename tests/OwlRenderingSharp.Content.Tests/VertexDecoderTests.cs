@@ -23,6 +23,14 @@ public class VertexDecoderTests
     }
 
     [Fact]
+    public void ATwoComponentWeightHasNoFullWeightFourthInfluence()
+    {
+        uint[] o = Decode(0x4, 128, 127);
+        Assert.Equal(0f, F(o[2]));
+        Assert.Equal(0f, F(o[3]));
+    }
+
+    [Fact]
     public void AnUnsignedNormalizedByteIsAFractionOf255()
     {
         uint[] o = Decode(0xa, 255, 0, 51, 255);
@@ -38,12 +46,12 @@ public class VertexDecoderTests
     }
 
     [Fact]
-    public void IntegerIndicesKeepTheirBitsAndAWOfOneAsAnInteger()
+    public void IntegerIndicesKeepTheirBitsAndMissingComponentsAreZero()
     {
         uint[] o = Decode(0x10a, 7, 0, 3, 200);
         Assert.Equal(new uint[] { 7, 0, 3, 200 }, o);
         uint[] two = Decode(0x104, 9, 4);
-        Assert.Equal(new uint[] { 9, 4, 0, 1 }, two);
+        Assert.Equal(new uint[] { 9, 4, 0, 0 }, two);
     }
 
     [Fact]

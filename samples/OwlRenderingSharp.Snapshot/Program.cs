@@ -57,7 +57,28 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     using RenderServices services = new(device, content);
     using ModelResources model = new ModelResourcesBuilder(services).Build(modelName);
     if (args.Contains("--list"))
-        foreach (ShapeResources shape in model.Shapes) Console.WriteLine($"{shape.Name}: {model.Materials[shape.MaterialIndex].Name} program {model.Materials[shape.MaterialIndex].Program.Index}");
+        foreach (ShapeResources shape in model.Shapes) Console.WriteLine($"{shape.Name}: {model.Materials[shape.MaterialIndex].Name} program {model.Materials[shape.MaterialIndex].Program.Index} bone {shape.BoneIndex} {model.Skeleton.Bones[shape.BoneIndex].Name} skin {shape.Record.SkinBones.Count}");
+
+    if (args.Contains("--attribs"))
+        foreach (ShapeResources shape in model.Shapes.Where(sh => sh.Name.Contains(Option("--only") ?? "")))
+            Console.WriteLine($"{shape.Name} verts {shape.Record.VertexCount} skin {shape.Record.SkinCount} radii [{string.Join(",", shape.Record.Radii)}] bounds [{string.Join(",", shape.Record.BoundingRadii)}] attribs {string.Join(" ", shape.Record.Attribs.Select(a => $"{a.Name}:{a.Format:X}@{a.Offset}/{a.Stream}"))}");
+
+    if (args.Contains("--check"))
+    {
+        var sk = model.Skeleton;
+        var w = BindPose.Worlds(sk);
+        Console.WriteLine($"matrices {sk.MatrixToBone.Count} inverse {sk.InverseMatrices.Count} bones {sk.Bones.Count} flags {sk.Flags:X}");
+        for (int k = 0; k < sk.InverseMatrices.Count; k++)
+        {
+            int i = sk.MatrixToBone[k];
+            var b = sk.Bones[i];
+            var m = sk.InverseMatrices[k];
+            var inverse = new System.Numerics.Matrix4x4(m[0], m[4], m[8], 0, m[1], m[5], m[9], 0, m[2], m[6], m[10], 0, m[3], m[7], m[11], 1);
+            var id = w[i] * inverse;
+            double dev = Math.Abs(id.M11 - 1) + Math.Abs(id.M22 - 1) + Math.Abs(id.M33 - 1) + Math.Abs(id.M41) + Math.Abs(id.M42) + Math.Abs(id.M43);
+            if (dev > 0.02) Console.WriteLine($"{i} {b.Name} parent {b.Parent} dev={dev:F3} s=({b.Scale[0]:F2},{b.Scale[1]:F2},{b.Scale[2]:F2})");
+        }
+    }
 
     OotBlockProfile profile = new(new OotBlockLayouts(), Environment());
     IBlockProfile active = profile;

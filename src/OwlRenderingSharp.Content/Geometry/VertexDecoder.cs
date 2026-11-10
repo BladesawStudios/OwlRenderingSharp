@@ -5,16 +5,16 @@ namespace OwlRenderingSharp.Content.Geometry;
 /// <summary>Decodes one stored vertex attribute into the four 32-bit words a shader input register holds.</summary>
 /// <remarks>
 /// Float and normalized kinds come out as floats, the integer kinds as the raw bits of the integer, which is how the game's shaders take indices and
-/// weights. Components the format lacks are 0, and the fourth is 1 (as a float, or the integer 1 for an integer kind), the same defaults GL gives a
-/// disabled attribute.
+/// weights. Components the format lacks are 0, except the fourth of a float format, which is 1 as for a position. An index or weight attribute with fewer than four
+/// components must pad with 0: GL's default of 1 would give a two-weight attribute a full-weight fourth influence and scale the vertex up (the face of Young Link
+/// has such a second weight pair).
 /// </remarks>
 public static class VertexDecoder
 {
     public static void Decode(VertexFormat format, ReadOnlySpan<byte> source, Span<uint> output)
     {
-        bool integer = format.Kind is VertexValueKind.UInt or VertexValueKind.SInt;
         output[0] = output[1] = output[2] = 0;
-        output[3] = integer ? 1u : BitConverter.SingleToUInt32Bits(1f);
+        output[3] = format.Kind == VertexValueKind.Float ? BitConverter.SingleToUInt32Bits(1f) : 0u;
         for (int i = 0; i < format.Components; i++)
             output[i] = format.Packed1010102 ? Packed(format.Kind, BinaryPrimitives.ReadUInt32LittleEndian(source), i) : Component(format, source, i);
         if (format.Packed1010102) output[3] = Packed(format.Kind, BinaryPrimitives.ReadUInt32LittleEndian(source), 3);
