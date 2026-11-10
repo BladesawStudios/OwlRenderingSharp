@@ -13,7 +13,7 @@ namespace OwlRenderingSharp.Graph;
 /// </remarks>
 public sealed class ModelDrawer : IDisposable
 {
-    private const int StorageSlots = 4, StorageBytes = 65536;
+    private const int StorageSlots = 4, StorageBytes = 16777216;
     private const float ShadowSlopeBias = 2f, ShadowUnitBias = 4f;
     private readonly RenderServices _services;
     private readonly IBlockProfile _profile;
@@ -21,6 +21,8 @@ public sealed class ModelDrawer : IDisposable
     private readonly BlockBuffers _blocks;
     private readonly GpuBuffer _support;
     private readonly GpuBuffer _storage;
+    private readonly GpuBuffer _probes;
+    private bool _hasProbes;
 
     public ModelDrawer(RenderServices services, IBlockProfile profile)
     {
@@ -30,6 +32,15 @@ public sealed class ModelDrawer : IDisposable
         _blocks = new BlockBuffers(services.Device);
         _support = new GpuBuffer(services.Device, "support buffer", SupportBufferData.Size);
         _storage = new GpuBuffer(services.Device, "zero storage", StorageBytes);
+        _probes = new GpuBuffer(services.Device, "light probes", StorageBytes);
+        _probes.Write<byte>(new byte[StorageBytes]);
+        _storage.Write<byte>(new byte[StorageBytes]);
+    }
+
+    public void SetLightProbes(ReadOnlySpan<float> entries)
+    {
+        _probes.Write<float>(entries, ShProbe.EntryBytes);
+        _hasProbes = true;
     }
 
     public void Draw(ModelResources model, FrameInfo frame, Matrix4x4 world) => Draw(model, frame, world, PassPlan.Forward);
@@ -38,7 +49,7 @@ public sealed class ModelDrawer : IDisposable
     {
         _support.Write<byte>(SupportBufferData.Create(frame.Width, frame.Height));
         _commands.BindUniform(BlockBindingPoints.SupportBuffer, _support);
-        for (uint slot = 0; slot < StorageSlots; slot++) _commands.BindStorage(slot, _storage);
+        for (uint slot = 0; slot < StorageSlots; slot++) _commands.BindStorage(slot, slot == 0 && _hasProbes ? _probes : _storage);
         HashSet<string> frameBlocks = [];
         foreach (RenderPass pass in plan.Passes)
             foreach (ShapeResources shape in Ordered(model, pass))
@@ -50,6 +61,7 @@ public sealed class ModelDrawer : IDisposable
         _blocks.Dispose();
         _support.Dispose();
         _storage.Dispose();
+        _probes.Dispose();
     }
 
     // Opaque shapes come before blended ones, each group by the material's priority and then in model order. A depth-only pass leaves the blended shapes out.

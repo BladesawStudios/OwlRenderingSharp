@@ -63,10 +63,14 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
         writer.Set("FroxelScale", new Vector4(1f, 1f, 1f, 0f));
     }
 
+    // The entry of the light-probe table a shape reads: entry 0 is where the programs that walk the clustered lights read their header, so the probe sits at 1.
+    public const int LightProbeEntry = 1;
+
     private static void FillShape(BlockWriter writer, ShapeInfo shape)
     {
         Matrix4x4[] worlds = BindPose.Worlds(shape.Skeleton);
         writer.Set("Model", shape.BoneIndex >= 0 && shape.BoneIndex < worlds.Length ? worlds[shape.BoneIndex] : Matrix4x4.Identity);
+        writer.Set("LightIndex", new Vector4(BitConverter.Int32BitsToSingle(LightProbeEntry), 0f, 0f, 0f));
         writer.Set("Position", new Vector4(shape.World.Translation, 1f));
         writer.Set("HeightFadeBottom", Vector4.Zero).Set("HeightFadeTop", Vector4.One).Set("HeightFadeOffset", Vector4.Zero).Set("HeightFadeBase", Vector4.Zero);
     }

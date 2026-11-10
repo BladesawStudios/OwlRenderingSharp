@@ -164,6 +164,16 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     }
 
     using ModelDrawer drawer = new(services, active);
+    if (!args.Contains("--no-sh"))
+    {
+        (Vector3 shSky, _) = OotLights.ProbeSky(profile.Environment, 0f, float.Parse(Option("--sky-cool") ?? "0.7"));
+        (_, Vector3 shGround) = OotLights.SkyColors(profile.Environment);
+        float shScale = float.Parse(Option("--sh-scale") ?? "1");
+        Vector3 up = shSky * float.Parse(Option("--sky-scale") ?? "0.6") * shScale, down = shGround * float.Parse(Option("--ground-scale") ?? "0.25") * shScale;
+        float[] shEntry = ShProbe.Entry(ShProbe.Project(d => SkyProbe.Blend(up, down, d)));
+        drawer.SetLightProbes(shEntry);
+    }
+
     Camera camera = BindPoseCamera.Frame(model.Skeleton);
     if (Option("--eye") is { } eye) camera.Eye = Vector(eye);
     if (Option("--target") is { } aim) camera.Target = Vector(aim);
