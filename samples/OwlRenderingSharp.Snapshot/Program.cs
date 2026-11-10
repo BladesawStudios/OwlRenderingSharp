@@ -182,6 +182,17 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     ModelResources shown = Option("--only") is { } only ? new ModelResources(model.Name, model.Skeleton, [.. model.Shapes.Where(x => only.Split(',').Any(part => x.Name.Contains(part)))], model.Materials) : model;
     using ShadowMap? shadows = args.Contains("--shadow") ? new ShadowMap(services, int.Parse(Option("--shadow-size") ?? "2048")) : null;
     Vector3 toSun = OotLights.ToSun(profile.Environment);
+    float keyPower = float.Parse(Option("--key") ?? "6");
+    if (keyPower > 0f)
+    {
+        Vector3 forward = Vector3.Normalize(camera.Target - camera.Eye), right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitY)), up = Vector3.Cross(right, forward);
+        Vector3 white = Vector3.One * keyPower;
+        float d = Vector3.Distance(camera.Eye, camera.Target);
+        drawer.SetClusterLights([
+            new ClusterLight(camera.Target - forward * d * 0.8f - right * d * 0.4f + up * d * 0.4f, white, 20f),
+            new ClusterLight(camera.Target - forward * d * 0.8f + right * d * 0.5f - up * d * 0.1f, white * 0.3f, 20f)]);
+    }
+
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
     (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "5"), float.Parse(Option("--sky-cool") ?? "0.7"));
     using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "1"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun, CatchLight(camera, probeSky));

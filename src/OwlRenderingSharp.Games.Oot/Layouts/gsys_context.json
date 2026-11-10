@@ -103,6 +103,60 @@
       "offset": 12624,
       "type": "Vector4",
       "evidence": "Slot 0x315 x, y, z of program 1843: the negated view-space depth above which the fragment moves to cascade 1, 2 and 3 (compared in that order, the layer is capped at 2)."
+    },
+    {
+      "name": "ClusterCountX",
+      "offset": 2368,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 148 .x: cells along x, the clamp of floor(screen x * count)."
+    },
+    {
+      "name": "ClusterStrideZ",
+      "offset": 2372,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 148 .y: low 16 bits multiply the z slice in the cell index."
+    },
+    {
+      "name": "ClusterTableBase",
+      "offset": 2376,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 148 .z: word offset of the cell table in storage buffer 1."
+    },
+    {
+      "name": "ClusterCellWords",
+      "offset": 2380,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 148 .w: words per cell (low 16 bits); a cell is its light count then the 1-based offset of its list."
+    },
+    {
+      "name": "ClusterListBase",
+      "offset": 2384,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 149 .x: word offset of the light id lists; entry i of a cell is at offset - 1 + i + this."
+    },
+    {
+      "name": "ClusterCountY",
+      "offset": 2388,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 149 .y: cells along y."
+    },
+    {
+      "name": "ClusterCountZ",
+      "offset": 2392,
+      "type": "Int",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 149 .z: depth slices."
+    },
+    {
+      "name": "ClusterSliceScale",
+      "offset": 2412,
+      "type": "Float",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 150 .w: multiplies the log of scaled view depth to give the slice."
+    },
+    {
+      "name": "ClusterDepthScale",
+      "offset": 2416,
+      "type": "Float",
+      "evidence": "Fragment slots 148-151 of program 2061 (Eye_Outer): the clustered light grid lookup. Slot 151 .x: scales view depth before the logarithm."
     }
   ]
 }

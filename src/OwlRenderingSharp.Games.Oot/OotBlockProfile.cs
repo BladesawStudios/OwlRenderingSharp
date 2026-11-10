@@ -91,6 +91,14 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
         }
     }
 
+    // One cell holds every light; see ClusterLights for the buffers it indexes.
+    private static void FillClusters(BlockWriter writer)
+    {
+        writer.Set("ClusterCountX", 1).Set("ClusterCountY", 1).Set("ClusterCountZ", 1).Set("ClusterStrideZ", 1);
+        writer.Set("ClusterTableBase", ClusterLights.TableBase).Set("ClusterCellWords", ClusterLights.CellWords).Set("ClusterListBase", ClusterLights.ListBase);
+        writer.Set("ClusterSliceScale", 1f).Set("ClusterDepthScale", 1f);
+    }
+
     private static void FillContext(BlockWriter writer, FrameInfo frame)
     {
         Camera camera = frame.Camera;
@@ -103,6 +111,7 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
         writer.Set("FarMinusNear", new Vector4(far - near, 1f / (1f - near / far), 0f, 0f));
         writer.Set("FieldOfView", new Vector4(aspect * tanHalf, tanHalf, camera.FovRadians, 0f));
         writer.Set("ProjectionA", ScreenRows(projection)).Set("ProjectionB", ScreenRows(projection)).Set("ShadowScale", new Vector4(1f, 1f, 0f, 0f)).Set("ScreenFade", Vector4.Zero);
+        FillClusters(writer);
         writer.Set("Resolution", new Vector4(frame.Width, frame.Height, 1f / frame.Width, 1f / frame.Height));
         FillShadows(writer, frame, inverseView);
     }
