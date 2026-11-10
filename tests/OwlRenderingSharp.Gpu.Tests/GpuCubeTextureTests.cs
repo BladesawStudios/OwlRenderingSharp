@@ -42,14 +42,16 @@ public class GpuCubeTextureTests(GlFixture gl)
     }
 
     [SkippableFact]
-    public void ReplicatingRedMakesAOneChannelTextureSampleAsGrey()
+    public void ASwizzleSetsWhatEachSampledChannelReads()
     {
         gl.Require().Run(device =>
         {
             using GpuTexture texture = new(device, "one channel", GpuFormat.R8, 1, 1);
-            texture.ReplicateRed();
+            texture.Swizzle(GpuChannel.Red, GpuChannel.Red, GpuChannel.Red, GpuChannel.One);
+            device.Gl.GetTextureParameter(texture.Handle, GLEnum.TextureSwizzleG, out int green);
             device.Gl.GetTextureParameter(texture.Handle, GLEnum.TextureSwizzleB, out int blue);
             device.Gl.GetTextureParameter(texture.Handle, GLEnum.TextureSwizzleA, out int alpha);
+            Assert.Equal((int)GLEnum.Red, green);
             Assert.Equal((int)GLEnum.Red, blue);
             Assert.Equal((int)GLEnum.One, alpha);
         });

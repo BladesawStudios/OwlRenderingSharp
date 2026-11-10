@@ -34,7 +34,7 @@ public static class TextureDecoding
             offset += size;
         }
 
-        return new DecodedTexture(record.Width, record.Height, passThrough ?? (srgb ? TextureEncoding.Rgba8Srgb : TextureEncoding.Rgba8), levels);
+        return new DecodedTexture(record.Width, record.Height, passThrough ?? (srgb ? TextureEncoding.Rgba8Srgb : TextureEncoding.Rgba8), levels, record.Channels);
     }
 
     // The encodings the GPU reads as they are. BC6H and the signed BC1-3 and BC7 variants GL has no format for are decoded instead.
