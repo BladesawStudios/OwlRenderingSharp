@@ -53,3 +53,10 @@ The detect block (`Detect`, 656 bytes) was decoded from the program: `[0]` = (ra
 `Dynamic` is (width, height, 1/width, 1/height). The programs read the top row first, so the depth is flipped in and the result flipped out. Radii and bias are this library's values (the engine's defaults for them are not readable);
 the sample-pair default of five and the bias 0.12 come from the engine's parameter constructor. The bilateral and horizontal passes of the game are not run. The compute samplers are numbered by handle order (a compute program's first handle follows its constant buffers).
 `AmbientOcclusionPass.Run` remains as a fallback with no archive. Depth of field (MainField focal distance 50, range 50) and the fog volumes (neutral in KokiriForest noon) are no-ops for a lone character; skin scattering is not a post pass (`skin_shading_scatter` has no real stage).
+
+### Where the occlusion goes, and what the archive does not have
+
+The game's `shadow_pre_pass_merge` (the variant with a depth shadow and an occlusion input, program 24 of the archive) writes `gsys_shadow_prepass` as (occlusion image value, cascade shadow visibility, 1, 1).
+`ShadowPrepass` now writes that layout: red is the game's SSAO result (`SsaoChain`), green the sun visibility from this library's cascades, so the shading programs read the occlusion where the game's do. The merge program itself is not run:
+its inputs are the same context fields the shading pass already gets, but its static-shadow and edge-adjust variants have no data here.
+The screen archive of this build has no depth-of-field program and `skin_shading_scatter` is an empty stub (no compute or fragment code), so there is nothing to run for those; `volume_fog` and `fog_pre_pass` exist but the KokiriForest noon palette makes them neutral for a lone character.

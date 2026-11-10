@@ -56,8 +56,8 @@ public sealed class GpuScreenPass : IDisposable
     /// <summary>The same with GL texture handles as inputs, for textures that are not 2D colour textures (such as a depth array read with <c>texelFetch</c>).</summary>
     public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, GpuBuffer? parameters = null) => Run(target, inputs, parameters is null ? [] : [(0u, parameters)]);
 
-    /// <summary>The same with several uniform buffers, each at its binding point; the inputs are bound at the texture units the program's samplers name (a zero handle leaves a unit empty).</summary>
-    public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, IReadOnlyList<(uint Binding, GpuBuffer Buffer)> blocks)
+    /// <summary>The same with several uniform buffers, each at its binding point; the inputs are bound at the texture units the program's samplers name (a zero handle leaves a unit empty). <paramref name="samplers"/> are optional GL sampler objects by unit, which replace the pass's clamped linear sampler (a comparison sampler for a shadow map).</summary>
+    public void Run(GpuFramebuffer target, IReadOnlyList<uint> inputs, IReadOnlyList<(uint Binding, GpuBuffer Buffer)> blocks, IReadOnlyList<uint>? samplers = null)
     {
         GL gl = _device.Gl;
         _device.Apply(new DrawState(CullMode.None, false, false, DepthFunc.Always, BlendState.Off));
@@ -68,7 +68,7 @@ public sealed class GpuScreenPass : IDisposable
         {
             if (inputs[i] == 0) continue;
             gl.BindTextureUnit((uint)i, inputs[i]);
-            gl.BindSampler((uint)i, _sampler.Handle);
+            gl.BindSampler((uint)i, samplers is not null && i < samplers.Count && samplers[i] != 0 ? samplers[i] : _sampler.Handle);
         }
 
         foreach ((uint binding, GpuBuffer buffer) in blocks) gl.BindBufferBase(BufferTargetARB.UniformBuffer, binding, buffer.Handle);

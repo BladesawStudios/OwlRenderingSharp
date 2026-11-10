@@ -36,7 +36,7 @@ public sealed class ShaderScreenPass : IDisposable
         _pass = new GpuScreenPass(services.Device, _name, _program);
     }
 
-    public void Run(GpuFramebuffer target, IReadOnlyDictionary<string, uint> samplers, IReadOnlyDictionary<string, byte[]> blocks)
+    public void Run(GpuFramebuffer target, IReadOnlyDictionary<string, uint> samplers, IReadOnlyDictionary<string, byte[]> blocks, IReadOnlyDictionary<string, uint>? samplerObjects = null)
     {
         uint[] units = new uint[_bindings.Samplers.Where(s => !s.Vertex).Select(s => s.Unit + 1).DefaultIfEmpty(0).Max()];
         foreach (SamplerBinding sampler in _bindings.Samplers.Where(s => !s.Vertex))
@@ -54,7 +54,10 @@ public sealed class ShaderScreenPass : IDisposable
                 bound.Add(((uint)_services.Points.Get(block.GsysName), buffer));
             }
 
-            _pass.Run(target, units, bound);
+            uint[] objects = new uint[units.Length];
+            if (samplerObjects is not null)
+                foreach (SamplerBinding sampler in _bindings.Samplers.Where(s => !s.Vertex && samplerObjects.ContainsKey(s.ShaderName))) objects[sampler.Unit] = samplerObjects[sampler.ShaderName];
+            _pass.Run(target, units, bound, objects);
         }
         finally
         {

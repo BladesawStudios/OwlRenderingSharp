@@ -62,29 +62,24 @@ public static class ModelSnapshot
         views.Resolve(viewDepth, camera);
         Dictionary<string, FrameTexture> textures = new(scene.Textures ?? new Dictionary<string, FrameTexture>());
         foreach ((string name, FrameTexture texture) in views.Textures) textures[name] = texture;
-        using ShadowPrepass? prepass = scene.Shadows is null ? null : CastShadows(device, drawer, model, camera, viewDepth, scene, world);
+        // The game's screen-space occlusion goes in the red channel of the shadow prepass, where its shading programs read it.
+        using GpuTexture? open = scene.OcclusionStrength > 0f && chain is not null ? chain.Occlusion(viewDepth, camera, new SsaoSettings(Radius: scene.OcclusionRadius)) : null;
+        using ShadowPrepass? prepass = scene.Shadows is not null ? CastShadows(device, drawer, model, camera, viewDepth, scene, world, open) : open is not null ? OcclusionOnly(device, camera, viewDepth, open, scene.OcclusionStrength) : null;
         if (prepass is not null) textures[ShadowPrepass.SamplerName] = prepass.Texture;
         scene = scene with { Textures = textures };
         using GpuTexture depth = new(device, "snapshot depth", GpuFormat.Depth32F, width, height);
-        bool occlude = scene.OcclusionStrength > 0f;
-        using GpuTexture? unoccluded = occlude ? new GpuTexture(device, "snapshot unoccluded", color.Format, width, height) : null;
+        bool fallback = scene.OcclusionStrength > 0f && chain is null;
+        using GpuTexture? unoccluded = fallback ? new GpuTexture(device, "snapshot unoccluded", color.Format, width, height) : null;
         using GpuFramebuffer target = new(device, "snapshot", [unoccluded ?? color], depth);
         commands.UseZeroToOneDepth();
         commands.Target(target, width, height);
         commands.Clear(background.X, background.Y, background.Z, background.W);
         drawer.Draw(model, scene.Frame(camera, width, height), world);
-        if (!occlude) return;
+        device.Check("ModelSnapshot.Render", model.Name);
+        if (!fallback) return;
         using GpuFramebuffer occluded = new(device, "snapshot occluded", [color]);
         using AmbientOcclusionPass pass = new(device);
-        if (chain is null)
-        {
-            pass.Run(unoccluded!, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, occluded);
-            return;
-        }
-
-        using GpuTexture open = chain.Occlusion(viewDepth, camera, new SsaoSettings(Radius: scene.OcclusionRadius));
-        pass.Apply(unoccluded!, open, scene.OcclusionStrength, occluded);
-        device.Check("ModelSnapshot.Render", model.Name);
+        pass.Run(unoccluded!, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, occluded);
     }
 
     // The depth image of the view: the opaque shapes drawn with no colour, into a scratch colour target.
@@ -98,12 +93,19 @@ public static class ModelSnapshot
     }
 
     // Renders the cascades from the sun and resolves the screen-space shadow mask from them and the view depth.
-    private static ShadowPrepass CastShadows(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture viewDepth, SnapshotScene scene, Matrix4x4 world)
+    private static ShadowPrepass CastShadows(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture viewDepth, SnapshotScene scene, Matrix4x4 world, GpuTexture? occlusion)
     {
         ShadowMap shadows = scene.Shadows!;
         shadows.Render(camera, (float)viewDepth.Width / viewDepth.Height, scene.ToSun, scene.ShadowDistance, light => drawer.Draw(model, light, world, PassPlan.Shadow));
         ShadowPrepass prepass = new(device, viewDepth.Width, viewDepth.Height);
-        prepass.Resolve(viewDepth, camera, shadows);
+        prepass.Resolve(viewDepth, camera, shadows, occlusion: occlusion, occlusionStrength: scene.OcclusionStrength);
+        return prepass;
+    }
+
+    private static ShadowPrepass OcclusionOnly(GpuDevice device, Camera camera, GpuTexture viewDepth, GpuTexture occlusion, float strength)
+    {
+        ShadowPrepass prepass = new(device, viewDepth.Width, viewDepth.Height);
+        prepass.Resolve(viewDepth, camera, occlusion, strength);
         return prepass;
     }
 

@@ -7,6 +7,13 @@ namespace OwlRenderingSharp.Graph.Tests;
 [Collection(GlCollection.Name)]
 public class ShadowPrepassTests(GlFixture gl)
 {
+    private const string HalfSource = """
+        #version 450 core
+        in vec2 uv;
+        out vec4 color;
+        void main() { color = vec4(0.5); }
+        """;
+
     // The centre pixel of a depth image looks down the camera axis; the cascade maps every world point to (x + 0.5, y + 0.5, 0.25), so only the stored depth decides.
     private static float CentreVisibility(GpuDevice device, float stored, float depthValue = 0.5f)
     {
@@ -50,5 +57,24 @@ public class ShadowPrepassTests(GlFixture gl)
             GpuException error = Assert.Throws<GpuException>(() => prepass.Resolve(depth, new Camera(), [cascade, cascade, cascade, cascade], 0, 8));
             Assert.Equal("shadow prepass", error.Resource);
         });
+    }
+
+    [SkippableFact]
+    public void TheOcclusionImageGoesInTheRedChannelWithTheSunVisibilityInGreen()
+    {
+        byte[] centre = gl.Require().Run(device =>
+        {
+            using GpuTexture depth = new(device, "view depth", GpuFormat.Depth32F, 4, 4);
+            depth.Upload<float>(Enumerable.Repeat(0.5f, 16).ToArray());
+            using GpuTexture occlusion = new(device, "occlusion", GpuFormat.Rgba16F, 4, 4);
+            using GpuFramebuffer fill = new(device, "occlusion", [occlusion]);
+            using GpuScreenPass half = new(device, "half", HalfSource);
+            half.Run(fill, Array.Empty<uint>());
+            using ShadowPrepass prepass = new(device, 4, 4);
+            prepass.Resolve(depth, new Camera(), occlusion);
+            return prepass.ReadMask().Skip((2 * 4 + 2) * 4).Take(4).ToArray();
+        });
+        Assert.InRange(centre[0], 126, 130);
+        Assert.Equal(255, centre[1]);
     }
 }
