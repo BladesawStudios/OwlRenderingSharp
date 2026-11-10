@@ -57,7 +57,7 @@ static Vector3 Vector(string text)
 
 byte[] Render(GpuDevice device, ContentSet content, string modelName, int width, int height)
 {
-    using RenderServices services = new(device, content);
+    using RenderServices services = new(device, content, args.Contains("--standalone") ? PassOptions.Standalone : null);
     using ModelResources model = new ModelResourcesBuilder(services).Build(modelName);
     if (args.Contains("--list"))
         foreach (ShapeResources shape in model.Shapes) Console.WriteLine($"{shape.Name}: {model.Materials[shape.MaterialIndex].Name} program {model.Materials[shape.MaterialIndex].Program.Index} -> material {model.Materials[shape.MaterialIndex].Pass(RenderPass.Material, shape.Record.SkinCount)?.Program.Index} zonly {model.Materials[shape.MaterialIndex].Pass(RenderPass.ZPrepass, shape.Record.SkinCount)?.Program.Index} shadow {model.Materials[shape.MaterialIndex].Pass(RenderPass.DepthShadow, shape.Record.SkinCount)?.Program.Index} weight {shape.Record.SkinCount} blend {model.Materials[shape.MaterialIndex].Blends} bone {shape.BoneIndex} {model.Skeleton.Bones[shape.BoneIndex].Name} skin {shape.Record.SkinBones.Count}");
@@ -142,7 +142,17 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     if (Option("--target") is { } aim) camera.Target = Vector(aim);
 
     ModelResources shown = Option("--only") is { } only ? new ModelResources(model.Name, model.Skeleton, [.. model.Shapes.Where(x => only.Split(',').Any(part => x.Name.Contains(part)))], model.Materials) : model;
-    return ModelSnapshot.Render(device, drawer, shown, camera, width, height, new Vector4(0.2f, 0.3f, 0.4f, 1f));
+    using ShadowMap? shadows = args.Contains("--shadow") ? new ShadowMap(services, int.Parse(Option("--shadow-size") ?? "2048")) : null;
+    Vector3 toSun = OotLights.ToSun(profile.Environment);
+    byte[] image = ModelSnapshot.Render(device, drawer, shown, camera, width, height, new Vector4(0.2f, 0.3f, 0.4f, 1f), null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"));
+    if (shadows is not null)
+        for (int c = 0; c < shadows.Cascades.Count; c++)
+        {
+            float[] depth = shadows.Download(c);
+            Console.WriteLine($"cascade {c}: split {shadows.Cascades[c].Split:F2}, {depth.Count(d => d < 1f) * 100.0 / depth.Length:F2}% of texels cast, nearest {depth.Min():F3}");
+        }
+
+    return image;
 }
 
 // With --romfs and --place the lighting is the place's palette at the given time of day; otherwise a neutral environment.

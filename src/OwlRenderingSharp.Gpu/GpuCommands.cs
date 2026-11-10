@@ -17,6 +17,12 @@ public sealed class GpuCommands(GpuDevice device)
         device.Gl.Viewport(0, 0, (uint)width, (uint)height);
     }
 
+    public void TargetDepth(GpuDepthLayerTarget target)
+    {
+        device.Gl.BindFramebuffer(FramebufferTarget.Framebuffer, target.Handle);
+        device.Gl.Viewport(0, 0, (uint)target.Width, (uint)target.Height);
+    }
+
     public void Clear(float red, float green, float blue, float alpha)
     {
         device.Apply(DrawState.Opaque);

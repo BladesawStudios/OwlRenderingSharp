@@ -60,4 +60,33 @@ public class OotBlockProfileTests
         Assert.Equal(1f, BitConverter.ToSingle(writer.Bytes, 0));
         Assert.Equal(5f, BitConverter.ToSingle(writer.Bytes, 48 + 4 * 7));
     }
+
+    [Fact]
+    public void TheContextCarriesEachCascadeAsTheInverseViewThenTheShadowTextureMatrix()
+    {
+        Camera camera = new() { Eye = new Vector3(0, 0, 4), Target = Vector3.Zero };
+        Matrix4x4 texture = Matrix4x4.CreateScale(0.5f, 0.25f, 2f) * Matrix4x4.CreateTranslation(0.1f, 0.2f, 0.3f);
+        ShadowCascade[] cascades = [new(new Camera(), texture, 5f), new(new Camera(), texture, 20f)];
+        BlockWriter writer = new(_profile.Layout("gsys_context", null)!);
+        _profile.Fill("gsys_context", writer, new FrameInfo(camera, 64, 64, cascades), null);
+        Matrix4x4.Invert(camera.ViewMatrix(), out Matrix4x4 inverseView);
+        Matrix4x4 expected = inverseView * texture;
+        int cascade0 = 0x304 * 16, cascade2 = 0x30C * 16;
+        Assert.Equal(expected.M11, BitConverter.ToSingle(writer.Bytes, cascade0));
+        Assert.Equal(expected.M41, BitConverter.ToSingle(writer.Bytes, cascade0 + 12));
+        Assert.Equal(expected.M12, BitConverter.ToSingle(writer.Bytes, cascade0 + 16));
+        Assert.Equal(expected.M44, BitConverter.ToSingle(writer.Bytes, cascade0 + 60));
+        Assert.Equal(expected.M11, BitConverter.ToSingle(writer.Bytes, cascade2));
+        Vector4 splits = writer.GetVector4("ShadowSplits");
+        Assert.Equal((5f, float.MaxValue), (splits.X, splits.Y));
+    }
+
+    [Fact]
+    public void AFrameWithoutCascadesWritesIdentityMatricesThatSplitNothing()
+    {
+        BlockWriter writer = new(_profile.Layout("gsys_context", null)!);
+        _profile.Fill("gsys_context", writer, new FrameInfo(new Camera(), 64, 64), null);
+        Assert.Equal(1f, BitConverter.ToSingle(writer.Bytes, 0x304 * 16));
+        Assert.Equal(float.MaxValue, writer.GetVector4("ShadowSplits").X);
+    }
 }

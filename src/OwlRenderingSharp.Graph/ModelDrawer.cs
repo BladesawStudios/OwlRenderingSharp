@@ -14,6 +14,7 @@ namespace OwlRenderingSharp.Graph;
 public sealed class ModelDrawer : IDisposable
 {
     private const int StorageSlots = 4, StorageBytes = 65536;
+    private const float ShadowSlopeBias = 2f, ShadowUnitBias = 4f;
     private readonly RenderServices _services;
     private readonly IBlockProfile _profile;
     private readonly GpuCommands _commands;
@@ -65,9 +66,22 @@ public sealed class ModelDrawer : IDisposable
         if (chosen is null) return;
         ShapeInfo info = new(shape.Name, shape.Record, shape.BoneIndex, model.Skeleton, world);
         Prepare(model.Name, material, chosen.Program, info, frame, frameBlocks);
-        _services.Device.Apply(pass.DepthOnly() ? material.State with { Channels = ColorMask.None, Blend = BlendState.Off } : material.State);
-        foreach (TextureUnit unit in chosen.Units) _commands.BindTexture((uint)unit.Unit, unit.Texture, unit.Sampler);
+        _services.Device.Apply(PassState(material.State, pass));
+        foreach (TextureUnit unit in chosen.Units)
+        {
+            FrameTexture bound = frame.Textures is not null && frame.Textures.TryGetValue(unit.ShaderName, out FrameTexture replacement) ? replacement : new FrameTexture(unit.Texture, unit.Sampler);
+            _commands.BindTexture((uint)unit.Unit, bound.Texture, bound.Sampler);
+        }
+
         _commands.Draw(shape.Geometry.Meshes[0], $"ModelDrawer.Draw {pass}", $"{model.Name}/{shape.Name}");
+    }
+
+    // A depth-only pass writes no colour and does not blend; the shadow pass also biases its depth so a surface does not shadow itself.
+    private static DrawState PassState(DrawState state, RenderPass pass)
+    {
+        if (!pass.DepthOnly()) return state;
+        DrawState depthOnly = state with { Channels = ColorMask.None, Blend = BlendState.Off };
+        return pass == RenderPass.DepthShadow ? depthOnly with { Raster = RasterState.Normal with { DepthBiasSlope = ShadowSlopeBias, DepthBiasUnits = ShadowUnitBias } } : depthOnly;
     }
 
     private void Prepare(string model, MaterialResources material, ProgramEntry program, ShapeInfo shape, FrameInfo frame, HashSet<string> frameBlocks)

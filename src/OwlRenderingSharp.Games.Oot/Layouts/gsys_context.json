@@ -79,6 +79,30 @@
       "offset": 1024,
       "type": "Vector4",
       "evidence": "Fragment slot 64 of program 6183: .x and .y scale terms in the shadow/ambient branch. Neutral value (1, 1) is a guess."
+    },
+    {
+      "name": "ShadowCascade0",
+      "offset": 12352,
+      "type": "Matrix4x4",
+      "evidence": "Fragment slots 0x304-0x30F of program 1843 (a model program that reads gsys_depth_shadow_cascade): each cascade is four slots, the x, y, depth and w rows of a view-space-to-shadow-texture matrix (x/w and y/w index the layer, depth/w is the compare reference), applied to the view-space position the slots 0-2 produce. Cascade 0 is slots 0x304-0x307."
+    },
+    {
+      "name": "ShadowCascade1",
+      "offset": 12416,
+      "type": "Matrix4x4",
+      "evidence": "Fragment slots 0x304-0x30F of program 1843 (a model program that reads gsys_depth_shadow_cascade): each cascade is four slots, the x, y, depth and w rows of a view-space-to-shadow-texture matrix (x/w and y/w index the layer, depth/w is the compare reference), applied to the view-space position the slots 0-2 produce. Cascade 1 is slots 0x308-0x30B."
+    },
+    {
+      "name": "ShadowCascade2",
+      "offset": 12480,
+      "type": "Matrix4x4",
+      "evidence": "Fragment slots 0x304-0x30F of program 1843 (a model program that reads gsys_depth_shadow_cascade): each cascade is four slots, the x, y, depth and w rows of a view-space-to-shadow-texture matrix (x/w and y/w index the layer, depth/w is the compare reference), applied to the view-space position the slots 0-2 produce. Cascade 2 is slots 0x30C-0x30F."
+    },
+    {
+      "name": "ShadowSplits",
+      "offset": 12624,
+      "type": "Vector4",
+      "evidence": "Slot 0x315 x, y, z of program 1843: the negated view-space depth above which the fragment moves to cascade 1, 2 and 3 (compared in that order, the layer is capped at 2)."
     }
   ]
 }

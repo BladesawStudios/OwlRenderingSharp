@@ -17,6 +17,8 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
     {
     }
 
+    private const int ShadowCascadeCount = 3;
+
     // The lighting the environment block is filled from; the host changes it as the place or the time of day does.
     public OotEnvironment Environment { get; set; } = environment;
 
@@ -87,6 +89,23 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
         writer.Set("FieldOfView", new Vector4(aspect * tanHalf, tanHalf, camera.FovRadians, 0f));
         writer.Set("ProjectionA", ScreenRows(projection)).Set("ProjectionB", ScreenRows(projection)).Set("ShadowScale", new Vector4(1f, 1f, 0f, 0f)).Set("ScreenFade", new Vector4(1f, 1f, 0f, 0f));
         writer.Set("Resolution", new Vector4(frame.Width, frame.Height, 1f / frame.Width, 1f / frame.Height));
+        FillShadows(writer, frame, inverseView);
+    }
+
+    // Each cascade takes the view-space position the shader rebuilds, so its matrix is the inverse view followed by the cascade's world-to-shadow-texture matrix. A frame with fewer cascades
+    // than the three the context holds repeats its last; a frame with none writes an identity that reads the neutral (unshadowed) map.
+    private static void FillShadows(BlockWriter writer, FrameInfo frame, Matrix4x4 inverseView)
+    {
+        IReadOnlyList<ShadowCascade> cascades = frame.Cascades is { Count: > 0 } ? frame.Cascades : [];
+        Vector4 splits = new(float.MaxValue);
+        for (int i = 0; i < ShadowCascadeCount; i++)
+        {
+            ShadowCascade? cascade = cascades.Count == 0 ? null : cascades[Math.Min(i, cascades.Count - 1)];
+            writer.Set($"ShadowCascade{i}", cascade is null ? Matrix4x4.Identity : inverseView * cascade.TextureMatrix);
+            if (cascade is not null && i < cascades.Count - 1) splits = i switch { 0 => splits with { X = cascade.Split }, 1 => splits with { Y = cascade.Split }, _ => splits with { Z = cascade.Split } };
+        }
+
+        writer.Set("ShadowSplits", splits);
     }
 
     // The x, y and w rows of a projection in the form a 3x4 field takes: its third written row is the w row, which the matrix's columns 1, 2 and 4 supply.

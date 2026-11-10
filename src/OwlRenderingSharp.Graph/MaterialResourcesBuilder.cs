@@ -54,11 +54,11 @@ public sealed class MaterialResourcesBuilder(RenderServices services)
             if (sampler is not null && record is not null && kind == GpuSamplerKind.Texture2D)
             {
                 GpuTexture texture = services.Resources.Texture(sampler.Texture, record);
-                units.Add(new TextureUnit(binding.Unit, texture.Handle, services.Samplers.Get(MaterialSamplerStates.From(sampler)).Handle));
+                units.Add(new TextureUnit(binding.Unit, texture.Handle, services.Samplers.Get(MaterialSamplerStates.From(sampler)).Handle, binding.ShaderName));
             }
             else
             {
-                units.Add(new TextureUnit(binding.Unit, services.Neutral.Handle(kind, FrameSamplerDefaults.For(binding.ShaderName)), services.Samplers.Get(SamplerState.LinearClamp).Handle));
+                units.Add(new TextureUnit(binding.Unit, services.Neutral.Handle(kind, FrameSamplerDefaults.For(binding.ShaderName)), services.Samplers.Get(SamplerState.LinearClamp).Handle, binding.ShaderName));
             }
         }
 
