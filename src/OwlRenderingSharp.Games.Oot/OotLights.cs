@@ -67,6 +67,18 @@ public static class OotLights
         writer.Set("ReflectionLod", new Vector4(SkyProbe.MipLevels - 1, 0f, 0f, 0f));
     }
 
+    // The sky a reflection shows: the hemisphere's sky colour cooled toward the palette's sky-sun colour at the same brightness, and a lobe of the key light's colour where the sun is.
+    public static (Vector3 Sky, SkySun Sun) ProbeSky(OotEnvironment environment, float lobe, float cool)
+    {
+        EnvPalette palette = environment.Palette;
+        (Vector3 sky, _) = SkyColors(environment);
+        Vector4 tint = palette.GetColor("SkySunColor", Vector4.One);
+        Vector3 cold = new(tint.X, tint.Y, tint.Z);
+        float skyLuma = Vector3.Dot(sky, new Vector3(0.2126f, 0.7152f, 0.0722f)), coldLuma = Math.Max(Vector3.Dot(cold, new Vector3(0.2126f, 0.7152f, 0.0722f)), 1e-3f);
+        Vector3 cooled = Vector3.Lerp(sky, cold * (skyLuma / coldLuma), cool);
+        return (cooled, new SkySun(ToSun(environment), Vector3.One * skyLuma * 6f * lobe));
+    }
+
     // The unit vector from the scene toward the sun, in world space.
     public static Vector3 ToSun(OotEnvironment environment)
     {

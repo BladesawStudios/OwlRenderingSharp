@@ -167,20 +167,22 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     Camera camera = BindPoseCamera.Frame(model.Skeleton);
     if (Option("--eye") is { } eye) camera.Eye = Vector(eye);
     if (Option("--target") is { } aim) camera.Target = Vector(aim);
+    if (Option("--fov") is { } fov) camera.FovRadians = float.DegreesToRadians(float.Parse(fov));
 
     ModelResources shown = Option("--only") is { } only ? new ModelResources(model.Name, model.Skeleton, [.. model.Shapes.Where(x => only.Split(',').Any(part => x.Name.Contains(part)))], model.Materials) : model;
     using ShadowMap? shadows = args.Contains("--shadow") ? new ShadowMap(services, int.Parse(Option("--shadow-size") ?? "2048")) : null;
     Vector3 toSun = OotLights.ToSun(profile.Environment);
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
-    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, sky, ground);
+    (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "1"), float.Parse(Option("--sky-cool") ?? "0.7"));
+    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky, ground, sun);
     SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), probe?.Textures, float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
     Vector4 background = new(0f, 0f, 0f, 1f);
     using GamePostChain? chain = Option("--post-shaders") is null || args.Contains("--plain-post") ? null : new GamePostChain(services);
     byte[] image = args.Contains("--raw")
         ? ModelSnapshot.Render(device, drawer, shown, camera, width, height, background, scene)
         : args.Contains("--plain")
-            ? FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"))
-            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? "0.25")) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"), chain, args.Contains("--transparent"));
+            ? FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? OotPost.DefaultExposure.ToString(System.Globalization.CultureInfo.InvariantCulture)))
+            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? OotPost.DefaultExposure.ToString(System.Globalization.CultureInfo.InvariantCulture))) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"), chain, args.Contains("--transparent"));
     if (shadows is not null)
         for (int c = 0; c < shadows.Cascades.Count; c++)
         {

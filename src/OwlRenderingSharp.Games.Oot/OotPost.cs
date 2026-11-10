@@ -13,7 +13,7 @@ namespace OwlRenderingSharp.Games.Oot;
 /// </remarks>
 public static class OotPost
 {
-    public const float DefaultExposure = 0.25f;
+    public const float DefaultExposure = 0.18f;
 
     public static PostSettings From(EnvPalette palette, float exposure = DefaultExposure) => new(
         exposure,

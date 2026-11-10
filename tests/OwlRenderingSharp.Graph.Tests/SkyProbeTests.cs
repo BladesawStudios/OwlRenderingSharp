@@ -38,5 +38,13 @@ public class SkyProbeTests
     }
 
     [Fact]
-    public void TheMipChainRunsDownToOneTexel() => Assert.Equal(5, SkyProbe.MipLevels);
+    public void TheMipChainRunsDownToOneTexel() => Assert.Equal(6, SkyProbe.MipLevels);
+
+    [Fact]
+    public void ASunLobeBrightensOnlyTheDirectionOfTheSun()
+    {
+        SkySun sun = new(Vector3.UnitX, Vector3.One * 10f);
+        Assert.Equal(10f, sun.At(Vector3.UnitX).X, 0.01f);
+        Assert.Equal(0f, sun.At(-Vector3.UnitX).X, 0.01f);
+    }
 }
