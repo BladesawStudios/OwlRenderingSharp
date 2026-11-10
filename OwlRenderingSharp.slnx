@@ -4,6 +4,10 @@
     <Project Path="src/OwlRenderingSharp.Content/OwlRenderingSharp.Content.csproj" />
     <Project Path="src/OwlRenderingSharp.Gpu/OwlRenderingSharp.Gpu.csproj" />
     <Project Path="src/OwlRenderingSharp.Graph/OwlRenderingSharp.Graph.csproj" />
+    <Project Path="src/OwlRenderingSharp.Games.Oot/OwlRenderingSharp.Games.Oot.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/OwlRenderingSharp.Snapshot/OwlRenderingSharp.Snapshot.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OwlRenderingSharp.Core.Tests/OwlRenderingSharp.Core.Tests.csproj" />
@@ -11,5 +15,6 @@
     <Project Path="tests/OwlRenderingSharp.Bench/OwlRenderingSharp.Bench.csproj" />
     <Project Path="tests/OwlRenderingSharp.Gpu.Tests/OwlRenderingSharp.Gpu.Tests.csproj" />
     <Project Path="tests/OwlRenderingSharp.Graph.Tests/OwlRenderingSharp.Graph.Tests.csproj" />
+    <Project Path="tests/OwlRenderingSharp.Games.Oot.Tests/OwlRenderingSharp.Games.Oot.Tests.csproj" />
   </Folder>
 </Solution>

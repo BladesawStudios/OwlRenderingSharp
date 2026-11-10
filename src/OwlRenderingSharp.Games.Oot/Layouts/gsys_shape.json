@@ -1,0 +1,7 @@
+{
+  "name": "gsys_shape",
+  "size": 256,
+  "fields": [
+    { "name": "Position", "offset": 64, "type": "Vector4", "evidence": "Vertex slot 4 of program 6183: its xyz is viewed with the context view rows and added to the view-space vertex, so it is the instance position in world space." }
+  ]
+}

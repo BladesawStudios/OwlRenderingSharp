@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\OwlRenderingSharp.Games.Oot\OwlRenderingSharp.Games.Oot.csproj" />
+    <ProjectReference Include="..\..\tests\OwlRenderingSharp.Bench\OwlRenderingSharp.Bench.csproj" />
+  </ItemGroup>
+
+</Project>
