@@ -22,7 +22,7 @@ public sealed class ScreenEffects(GpuDevice device)
             if (scene.OcclusionStrength > 0f && !hasChain)
             {
                 AmbientOcclusionPass pass = Own(new AmbientOcclusionPass(device), owned);
-                steps.Add((src, dst) => pass.Run(src, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, dst));
+                steps.Add((src, dst) => pass.Run(src, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, dst, skinDepth));
             }
 
             if (scene.Subsurface is not null && skinDepth is not null)

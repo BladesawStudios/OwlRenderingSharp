@@ -184,7 +184,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     Vector3 toSun = OotLights.ToSun(profile.Environment);
     (Vector3 sky, Vector3 ground) = OotLights.SkyColors(profile.Environment);
     (Vector3 probeSky, SkySun sun) = OotLights.ProbeSky(profile.Environment, float.Parse(Option("--sun-lobe") ?? "5"), float.Parse(Option("--sky-cool") ?? "0.7"));
-    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "1"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun);
+    using SkyProbe? probe = args.Contains("--no-sky") ? null : new SkyProbe(services, probeSky * float.Parse(Option("--sky-scale") ?? "1"), ground * float.Parse(Option("--ground-scale") ?? "0.25"), sun, CatchLight(camera, probeSky));
     SnapshotScene scene = new(null, shadows, toSun, float.Parse(Option("--shadow-distance") ?? "20"), Overrides(device, probe?.Textures), float.Parse(Option("--ao") ?? "1"), float.Parse(Option("--ao-radius") ?? "0.15"), ["Mt_Skin", "Mt_Face"], args.Contains("--no-sss") ? null : new SubsurfacePass.Settings(Strength: float.Parse(Option("--sss") ?? "0.5")), args.Contains("--no-fog") ? null : OotAtmosphere.Fog(profile.Environment.Palette), args.Contains("--no-dof") ? null : OotAtmosphere.Focus(int.Parse(Option("--ssaa") ?? "2")));
     float[] bg = [.. (Option("--background") ?? "0,0,0").Split(',').Select(float.Parse)];
     Vector4 background = new(bg[0], bg[1], bg[2], 1f);
@@ -219,6 +219,16 @@ IReadOnlyDictionary<string, FrameTexture>? Overrides(GpuDevice device, IReadOnly
     }
 
     return all.Count == 0 ? null : all;
+}
+
+// A small bright lobe toward the upper left of the lens, for the catchlights of a wet eye; --catchlight sets its strength (0 turns it off).
+SkySun? CatchLight(Camera camera, Vector3 sky)
+{
+    float strength = float.Parse(Option("--catchlight") ?? "0");
+    if (strength <= 0f) return null;
+    Vector3 forward = Vector3.Normalize(camera.Target - camera.Eye), right = Vector3.Normalize(Vector3.Cross(forward, Vector3.UnitY)), up = Vector3.Cross(right, forward);
+    Vector3 toLight = Vector3.Normalize(-forward * 0.8f - right * 0.4f + up * 0.4f);
+    return new SkySun(toLight, Vector3.One * Vector3.Dot(sky, new Vector3(0.2126f, 0.7152f, 0.0722f)) * strength, float.Parse(Option("--catchlight-sharpness") ?? "300"));
 }
 
 // With --romfs and --place the lighting is the place's palette at the given time of day; otherwise a neutral environment.

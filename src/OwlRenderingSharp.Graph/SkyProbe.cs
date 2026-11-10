@@ -22,9 +22,9 @@ public sealed class SkyProbe : IDisposable
     private readonly GpuSampler _sampler;
     private readonly FrameTexture _texture;
 
-    public SkyProbe(RenderServices services, Vector3 sky, Vector3 ground, SkySun? sun = null)
+    public SkyProbe(RenderServices services, Vector3 sky, Vector3 ground, SkySun? sun = null, SkySun? key = null)
     {
-        _cube = new GpuCubeTexture(services.Device, "sky probe", FaceSize, Faces(sky, ground, FaceSize, sun));
+        _cube = new GpuCubeTexture(services.Device, "sky probe", FaceSize, Faces(sky, ground, FaceSize, sun, key));
         _sampler = new GpuSampler(services.Device, "sky probe", SamplerState.LinearClamp with { Min = TextureFilter.LinearMipLinear });
         _texture = new FrameTexture(_cube.Handle, _sampler.Handle);
     }
@@ -46,7 +46,7 @@ public sealed class SkyProbe : IDisposable
     }
 
     /// <summary>The six faces (+X, -X, +Y, -Y, +Z, -Z) of <paramref name="size"/> by <paramref name="size"/> texels, four floats each, top row first, in OpenGL's cube face orientation.</summary>
-    public static float[][] Faces(Vector3 sky, Vector3 ground, int size, SkySun? sun = null)
+    public static float[][] Faces(Vector3 sky, Vector3 ground, int size, SkySun? sun = null, SkySun? key = null)
     {
         float[][] faces = new float[6][];
         for (int face = 0; face < 6; face++)
@@ -57,7 +57,7 @@ public sealed class SkyProbe : IDisposable
                 {
                     float s = (column + 0.5f) / size * 2f - 1f, t = (row + 0.5f) / size * 2f - 1f;
                     Vector3 direction = Direction(face, s, t);
-                    Vector3 color = Blend(sky, ground, direction) + (sun?.At(direction) ?? Vector3.Zero);
+                    Vector3 color = Blend(sky, ground, direction) + (sun?.At(direction) ?? Vector3.Zero) + (key?.At(direction) ?? Vector3.Zero);
                     int at = (row * size + column) * 4;
                     faces[face][at] = color.X;
                     faces[face][at + 1] = color.Y;
