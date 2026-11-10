@@ -33,10 +33,10 @@
       "evidence": "Slot 23 xyz, negated and dotted with the world normal; same slot as TotK LightDir0World (WildRenderingSharp)."
     },
     {
-      "name": "ShadowBias",
+      "name": "WetnessTerms",
       "offset": 880,
       "type": "Vector4",
-      "evidence": "Slot 55 .w: added to the clamped light term before the final clamp."
+      "evidence": "Slot 55. .w is added to the clamped light term before the final clamp. .z multiplies (material p_rain_wet_valid_ratio, byte 0x328, times the third channel of the packed mask texture) and the result flattens the normal toward the surface normal and lifts the specular: with the material's valid ratio and absorption at 1 it turned skin and coats from matte to glossy and wet-looking (programs 14589 and 21609 pair). .y is a floor under a light term and .x scales the same product in the metal programs; both are untested."
     },
     {
       "name": "ShadowScale",

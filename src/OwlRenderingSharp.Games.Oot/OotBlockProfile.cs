@@ -25,6 +25,9 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
     // A multiplier on the sun's colour and the key and rim lights built from it; 1 is the palette's own level.
     public float SunScale { get; set; } = 1f;
 
+    // How wet the scene is, 0 to 1: the environment half of the wetness control (see WetnessControl for the material half).
+    public float Wetness { get; set; }
+
     public BlockScope Scope(string block) => block switch
     {
         "gsys_material" => BlockScope.Material,
@@ -45,6 +48,7 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
                 break;
             case OotBlockLayouts.Environment:
                 OotLights.Fill(writer, Environment, SunScale);
+                writer.Set("WetnessTerms", new Vector4(0f, 0f, WetnessControl.Clamp(Wetness), 0f));
                 FillVolumes(writer, frame);
                 break;
             case OotBlockLayouts.SceneMaterial:

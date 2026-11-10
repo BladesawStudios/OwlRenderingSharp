@@ -144,6 +144,16 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         active = new EnvironmentProbe(profile, int.Parse(ends[0]), int.Parse(ends[^1]), new Vector4(v));
     }
 
+    foreach (string patch in args.Where((a, i) => i > 0 && args[i - 1] == "--patch"))
+    {
+        // block:slot=x,y,z,w  with block one of context, env, scene, e.g. env:55=0,0,1,0
+        string[] parts = patch.Split(':', 2);
+        string[] pair = parts[1].Split('=');
+        float[] v = [.. pair[1].Split(',').Select(float.Parse)];
+        string name = parts[0] switch { "context" => OotBlockLayouts.Context, "env" => OotBlockLayouts.Environment, _ => OotBlockLayouts.SceneMaterial };
+        active = new SlotPatchProfile(active, name, new Dictionary<int, Vector4> { [int.Parse(pair[0])] = new(v[0], v.Length > 1 ? v[1] : 0, v.Length > 2 ? v[2] : 0, v.Length > 3 ? v[3] : 0) });
+    }
+
     foreach (string set in args.Where((a, i) => i > 0 && args[i - 1] == "--set"))
     {
         string[] target = set.Split('=')[0].Split('.');
@@ -175,7 +185,19 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     }
 
     if (Option("--wet") is { } wet)
-        WetnessControl.Apply(model, wet == "auto" ? profile.Environment.Palette.GetFloat("HumidityWetRatio", 0f) : float.Parse(wet));
+    {
+        profile.Wetness = wet == "auto" ? profile.Environment.Palette.GetFloat("HumidityWetRatio", 0f) : float.Parse(wet);
+        WetnessControl.Apply(model, profile.Wetness);
+    }
+
+    foreach (string write in args.Where((a, i) => i > 0 && args[i - 1] == "--material-set"))
+    {
+        // byteOffset=value, e.g. 0x328=1, into the gsys_material block of every material
+        string[] pair = write.Split('=');
+        int offset = Convert.ToInt32(pair[0], pair[0].StartsWith("0x") ? 16 : 10);
+        foreach (MaterialResources material in model.Materials)
+            if (material.Block is { } block && block.ByteSize >= offset + 4) block.Write<float>([float.Parse(pair[1])], offset);
+    }
 
     Camera camera = BindPoseCamera.Frame(model.Skeleton);
     if (Option("--zoom") is { } zoom) camera.Eye = camera.Target + (camera.Eye - camera.Target) / float.Parse(zoom);

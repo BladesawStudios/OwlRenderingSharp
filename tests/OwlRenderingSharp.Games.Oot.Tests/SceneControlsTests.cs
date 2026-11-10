@@ -32,8 +32,24 @@ public class SceneControlsTests
     public void WetnessDrivesTheAbsorptionFieldOfTheMaterialBlock()
     {
         Assert.Equal(0x324, WetnessControl.Absorption);
+        Assert.Equal(0x328, WetnessControl.ValidRatio);
+        Assert.False(WetnessControl.Wettable("Mt_Eye_Outer"));
+        Assert.True(WetnessControl.Wettable("Mt_Skin"));
         Assert.Equal(1f, WetnessControl.Clamp(3f));
         Assert.Equal(0f, WetnessControl.Clamp(-1f));
-        Assert.True(WetnessControl.MinimumBlockBytes > WetnessControl.Absorption);
+        Assert.True(WetnessControl.MinimumBlockBytes > WetnessControl.ValidRatio);
+    }
+}
+
+public class WetnessProfileTests
+{
+    [Fact]
+    public void TheProfileWritesTheSceneWetnessIntoTheThirdComponentOfSlot55()
+    {
+        OotBlockLayouts layouts = new();
+        OotBlockProfile profile = new(layouts, OotEnvironment.Neutral) { Wetness = 0.6f };
+        BlockWriter writer = new(layouts.Find(OotBlockLayouts.Environment)!);
+        profile.Fill(OotBlockLayouts.Environment, writer, new FrameInfo(new Camera(), 64, 64), null);
+        Assert.Equal(0.6f, writer.GetVector4("WetnessTerms").Z, 1e-5f);
     }
 }
