@@ -26,4 +26,7 @@ public static class FrameSamplerDefaults
     };
 
     public static uint For(string shaderName) => Colors.GetValueOrDefault(shaderName, White);
+
+    // A volume texture the frame does not provide holds light or reflection probes, and an empty one is dark; the other kinds keep the name's own default.
+    public static uint For(string shaderName, GpuSamplerKind kind) => kind == GpuSamplerKind.Texture3D && !Colors.ContainsKey(shaderName) ? Black : For(shaderName);
 }

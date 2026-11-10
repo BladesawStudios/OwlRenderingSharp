@@ -5,6 +5,7 @@ using System.Numerics;
 using OwlRenderingSharp;
 using OwlRenderingSharp.Bench;
 using OwlRenderingSharp.Content;
+using OwlRenderingSharp.Content.Programs;
 using OwlRenderingSharp.Content.Palettes;
 using OwlRenderingSharp.Games.Oot;
 using OwlRenderingSharp.Gpu;
@@ -61,6 +62,14 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     using ModelResources model = new ModelResourcesBuilder(services).Build(modelName);
     if (args.Contains("--list"))
         foreach (ShapeResources shape in model.Shapes) Console.WriteLine($"{shape.Name}: {model.Materials[shape.MaterialIndex].Name} program {model.Materials[shape.MaterialIndex].Program.Index} -> material {model.Materials[shape.MaterialIndex].Pass(RenderPass.Material, shape.Record.SkinCount)?.Program.Index} zonly {model.Materials[shape.MaterialIndex].Pass(RenderPass.ZPrepass, shape.Record.SkinCount)?.Program.Index} shadow {model.Materials[shape.MaterialIndex].Pass(RenderPass.DepthShadow, shape.Record.SkinCount)?.Program.Index} weight {shape.Record.SkinCount} blend {model.Materials[shape.MaterialIndex].Blends} bone {shape.BoneIndex} {model.Skeleton.Bones[shape.BoneIndex].Name} skin {shape.Record.SkinBones.Count}");
+
+    if (Option("--samplers") is { } samplerPart)
+        foreach (ShapeResources shape in model.Shapes.Where(x => x.Name.Contains(samplerPart)))
+        {
+            MaterialPass? pass = model.Materials[shape.MaterialIndex].Pass(RenderPass.Material, shape.Record.SkinCount);
+            Console.WriteLine($"{shape.Name}: program {pass?.Program.Index}");
+            foreach (SamplerBinding binding in pass?.Program.Bindings.Samplers ?? []) Console.WriteLine($"  unit {binding.Unit} {binding.GlslName} {binding.Type} -> {binding.ShaderName}");
+        }
 
     if (Option("--material") is { } part)
         foreach (var reference in services.Content.FindModel(modelName)!.Materials.Where(m => m.Name.Contains(part)))

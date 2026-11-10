@@ -1,3 +1,5 @@
+using OwlRenderingSharp.Gpu;
+
 namespace OwlRenderingSharp.Graph.Tests;
 
 public class FrameSamplerDefaultsTests
@@ -22,5 +24,13 @@ public class FrameSamplerDefaultsTests
     public void AnUnlistedSamplerIsWhite()
     {
         Assert.Equal(0xFFFFFFFFu, FrameSamplerDefaults.For("_a0"));
+    }
+
+    [Fact]
+    public void AnEmptyVolumeTextureIsDarkSoNoProbeLightIsInvented()
+    {
+        Assert.Equal(0xFF000000u, FrameSamplerDefaults.For("gsys_user3", GpuSamplerKind.Texture3D));
+        Assert.Equal(0xFFFFFFFFu, FrameSamplerDefaults.For("gsys_user3", GpuSamplerKind.Texture2D));
+        Assert.Equal(FrameSamplerDefaults.For("gsys_cube_map"), FrameSamplerDefaults.For("gsys_cube_map", GpuSamplerKind.Texture3D));
     }
 }

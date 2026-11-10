@@ -58,7 +58,7 @@ public sealed class MaterialResourcesBuilder(RenderServices services)
             }
             else
             {
-                units.Add(new TextureUnit(binding.Unit, services.Neutral.Handle(kind, FrameSamplerDefaults.For(binding.ShaderName)), services.Samplers.Get(SamplerState.LinearClamp).Handle, binding.ShaderName));
+                units.Add(new TextureUnit(binding.Unit, services.Neutral.Handle(kind, FrameSamplerDefaults.For(binding.ShaderName, kind)), services.Samplers.Get(SamplerState.LinearClamp).Handle, binding.ShaderName));
             }
         }
 
