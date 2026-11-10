@@ -226,7 +226,8 @@ OotEnvironment Environment()
     if (Option("--romfs") is not { } romfs || Option("--place") is not { } place) return OotEnvironment.Neutral;
     string[] time = (Option("--time") ?? "12:00").Split(':');
     OotEnvironment environment = OotEnvironment.At(EnvPaletteLoader.Load(romfs), place, int.Parse(time[0]), int.Parse(time[1]));
-    return args.Contains("--palette-sky") ? environment : environment.WithWhiteSky();
+    environment = args.Contains("--palette-sky") ? environment : environment.WithWhiteSky();
+    return environment with { SunAzimuth = float.Parse(Option("--sun-azimuth") ?? environment.SunAzimuth.ToString()), SunElevation = float.Parse(Option("--sun-elevation") ?? environment.SunElevation.ToString()) };
 }
 
 // Sets each field of a block to a value in turn and prints the total brightness of the shapes that are not background, so a field that changes the picture shows up.
