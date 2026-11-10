@@ -8,6 +8,12 @@ public class GpuFormatsTests
         foreach (GpuFormat format in Enum.GetValues<GpuFormat>())
         {
             GpuFormats.Internal(format);
+            if (GpuFormats.IsCompressed(format))
+            {
+                Assert.True(GpuFormats.BlockBytes(format) is 8 or 16, format.ToString());
+                continue;
+            }
+
             GpuFormats.Pixel(format);
             GpuFormats.Type(format);
             Assert.True(GpuTexture.PixelBytes(format) > 0, format.ToString());

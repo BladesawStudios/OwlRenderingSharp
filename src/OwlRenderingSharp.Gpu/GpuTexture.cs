@@ -8,7 +8,7 @@ namespace OwlRenderingSharp.Gpu;
 /// layout, and a level that does not exist or an upload that does not match its size throws a <see cref="GpuException"/> naming the texture.
 /// Mips are generated on request, not on upload.
 /// </remarks>
-public sealed class GpuTexture : IDisposable
+public sealed unsafe class GpuTexture : IDisposable
 {
     private readonly GpuDevice _device;
     private uint _handle;
@@ -42,6 +42,7 @@ public sealed class GpuTexture : IDisposable
     public void Upload<T>(ReadOnlySpan<T> pixels, int level = 0) where T : unmanaged
     {
         (int w, int h) = LevelSize(level);
+        if (GpuFormats.IsCompressed(Format)) throw new GpuException("A block-compressed texture is uploaded with UploadCompressed", resource: Name);
         int expected = w * h * PixelBytes(Format);
         int actual = pixels.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
         if (actual != expected) throw new GpuException($"Level {level} takes {expected} bytes and {actual} were given", resource: Name);
@@ -49,12 +50,22 @@ public sealed class GpuTexture : IDisposable
         _device.Check("GpuTexture.Upload", Name);
     }
 
+    public void UploadCompressed(ReadOnlySpan<byte> blocks, int level = 0)
+    {
+        (int w, int h) = LevelSize(level);
+        int expected = LevelBytes(w, h);
+        if (blocks.Length != expected) throw new GpuException($"Level {level} takes {expected} bytes and {blocks.Length} were given", resource: Name);
+        fixed (byte* data = blocks) _device.Gl.CompressedTextureSubImage2D(_handle, level, 0, 0, (uint)w, (uint)h, (GLEnum)GpuFormats.Internal(Format), (uint)blocks.Length, data);
+        _device.Check("GpuTexture.UploadCompressed", Name);
+    }
+
     public T[] Download<T>(int level = 0) where T : unmanaged
     {
         (int w, int h) = LevelSize(level);
-        int bytes = w * h * PixelBytes(Format);
+        int bytes = LevelBytes(w, h);
         T[] pixels = new T[bytes / System.Runtime.CompilerServices.Unsafe.SizeOf<T>()];
-        _device.Gl.GetTextureImage(_handle, level, GpuFormats.Pixel(Format), GpuFormats.Type(Format), (uint)bytes, new Span<T>(pixels));
+        if (GpuFormats.IsCompressed(Format)) _device.Gl.GetCompressedTextureImage(_handle, level, (uint)bytes, new Span<T>(pixels));
+        else _device.Gl.GetTextureImage(_handle, level, GpuFormats.Pixel(Format), GpuFormats.Type(Format), (uint)bytes, new Span<T>(pixels));
         _device.Check("GpuTexture.Download", Name);
         return pixels;
     }
@@ -81,6 +92,10 @@ public sealed class GpuTexture : IDisposable
         GpuFormat.Rgba32F => 16,
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     };
+
+    private int LevelBytes(int width, int height) => GpuFormats.IsCompressed(Format)
+        ? (width + 3) / 4 * ((height + 3) / 4) * GpuFormats.BlockBytes(Format)
+        : width * height * PixelBytes(Format);
 
     private (int Width, int Height) LevelSize(int level)
     {

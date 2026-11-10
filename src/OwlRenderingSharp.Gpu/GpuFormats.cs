@@ -19,8 +19,30 @@ public static class GpuFormats
         GpuFormat.R32Uint => GLEnum.R32ui,
         GpuFormat.Depth32F => GLEnum.DepthComponent32f,
         GpuFormat.Depth24Stencil8 => GLEnum.Depth24Stencil8,
+        GpuFormat.Bc1 => (GLEnum)0x83F1,
+        GpuFormat.Bc1Srgb => (GLEnum)0x8C4D,
+        GpuFormat.Bc2 => (GLEnum)0x83F2,
+        GpuFormat.Bc2Srgb => (GLEnum)0x8C4E,
+        GpuFormat.Bc3 => (GLEnum)0x83F3,
+        GpuFormat.Bc3Srgb => (GLEnum)0x8C4F,
+        GpuFormat.Bc4 => GLEnum.CompressedRedRgtc1,
+        GpuFormat.Bc4Snorm => GLEnum.CompressedSignedRedRgtc1,
+        GpuFormat.Bc5 => GLEnum.CompressedRGRgtc2,
+        GpuFormat.Bc5Snorm => GLEnum.CompressedSignedRGRgtc2,
+        GpuFormat.Bc7 => GLEnum.CompressedRgbaBptcUnorm,
+        GpuFormat.Bc7Srgb => GLEnum.CompressedSrgbAlphaBptcUnorm,
         _ => throw new ArgumentOutOfRangeException(nameof(format)),
     });
+
+    public static bool IsCompressed(GpuFormat format) => format >= GpuFormat.Bc1;
+
+    // Bytes of one 4x4 block of a compressed format.
+    public static int BlockBytes(GpuFormat format) => format switch
+    {
+        GpuFormat.Bc1 or GpuFormat.Bc1Srgb or GpuFormat.Bc4 or GpuFormat.Bc4Snorm => 8,
+        GpuFormat.Bc2 or GpuFormat.Bc2Srgb or GpuFormat.Bc3 or GpuFormat.Bc3Srgb or GpuFormat.Bc5 or GpuFormat.Bc5Snorm or GpuFormat.Bc7 or GpuFormat.Bc7Srgb => 16,
+        _ => throw new ArgumentOutOfRangeException(nameof(format)),
+    };
 
     public static PixelFormat Pixel(GpuFormat format) => format switch
     {

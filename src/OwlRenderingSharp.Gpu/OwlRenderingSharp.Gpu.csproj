@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OwlRenderingSharp.Core\OwlRenderingSharp.Core.csproj" />
+    <ProjectReference Include="..\OwlRenderingSharp.Content\OwlRenderingSharp.Content.csproj" />
   </ItemGroup>
 
 </Project>
