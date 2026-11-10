@@ -6,6 +6,7 @@ WildRenderingSharp written properly from the start: BfShaderSharp does all the r
 Nothing is built yet. The design is in:
 
 - [docs/architecture.md](docs/architecture.md): the projects, the frame graph, uniform blocks, how a game is added, and the build order
+- [docs/uniform-blocks.md](docs/uniform-blocks.md): every uniform block the OOT shaders declare, with sizes, binding rules and named members
 - [docs/oot-pipeline.md](docs/oot-pipeline.md): what is known about OOT's render pipeline and what is still to find out
 - [docs/guidelines.md](docs/guidelines.md): the code rules
 
