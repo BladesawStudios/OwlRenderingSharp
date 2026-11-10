@@ -68,7 +68,8 @@ public static class OotLights
     // The slots with no palette field behind them yet, set to values that leave their terms inert.
     private static void FillNeutral(BlockWriter writer)
     {
-        writer.Set("AmbientScale", new Vector4(1f, 0f, 0f, 0f));
+        // Zero: the horse and cloth programs divide by a term that goes to nothing as this gain approaches one, which blew Epona and the Ganondorf cape out to red and magenta; the SH probe supplies the ambient light.
+        writer.Set("AmbientScale", new Vector4(0f, 0f, 0f, 0f));
         writer.Set("ShadowScale", new Vector4(1f, 1f, 1f, 1f));
         writer.Set("TerminatorRamp", new Vector4(0f, 1f, 0f, 0f));
         writer.Set("LightVolume", new Vector4(0.5f, 0.5f, 0.5f, 0f));

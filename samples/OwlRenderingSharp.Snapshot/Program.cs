@@ -175,6 +175,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
     }
 
     Camera camera = BindPoseCamera.Frame(model.Skeleton);
+    if (Option("--zoom") is { } zoom) camera.Eye = camera.Target + (camera.Eye - camera.Target) / float.Parse(zoom);
     if (Option("--eye") is { } eye) camera.Eye = Vector(eye);
     if (Option("--target") is { } aim) camera.Target = Vector(aim);
     if (Option("--fov") is { } fov) camera.FovRadians = float.DegreesToRadians(float.Parse(fov));
