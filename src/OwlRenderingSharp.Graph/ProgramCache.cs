@@ -32,11 +32,13 @@ public sealed class ProgramCache(GpuDevice device, ContentSet content, BlockBind
         _programs.Clear();
     }
 
+    private static string? Compatible(string? glsl) => glsl is null ? null : GlslCompatibility.Rewrite(glsl);
+
     private ProgramEntry Build(string archiveName, string shadingModel, int program)
     {
         PreparedModel model = content.Shaders(archiveName).Model(shadingModel) ?? throw new BfShaderFormatException($"{archiveName} has no shading model {shadingModel}");
         if (program < 0 || program >= model.ProgramCount) throw new BfShaderFormatException($"{archiveName}/{shadingModel} has no program {program}");
-        string? vertex = model.Glsl(program, ShaderStage.Vertex), fragment = model.Glsl(program, ShaderStage.Fragment);
+        string? vertex = Compatible(model.Glsl(program, ShaderStage.Vertex)), fragment = Compatible(model.Glsl(program, ShaderStage.Fragment));
         Dictionary<GpuShaderStage, string> sources = [];
         if (vertex is not null) sources[GpuShaderStage.Vertex] = vertex;
         if (fragment is not null) sources[GpuShaderStage.Fragment] = fragment;

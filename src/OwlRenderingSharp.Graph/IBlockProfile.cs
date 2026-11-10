@@ -11,7 +11,8 @@ public interface IBlockProfile
 {
     BlockScope Scope(string block);
 
-    BlockLayout? Layout(string block);
+    // The shape is null for frame-level blocks. A shape block may be sized by its shape, such as a skeleton palette by its bone count.
+    BlockLayout? Layout(string block, ShapeInfo? shape);
 
     void Fill(string block, BlockWriter writer, FrameInfo frame, ShapeInfo? shape);
 }

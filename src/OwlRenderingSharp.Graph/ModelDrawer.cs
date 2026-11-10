@@ -40,7 +40,7 @@ public sealed class ModelDrawer : IDisposable
         foreach (ShapeResources shape in model.Shapes)
         {
             MaterialResources material = model.Materials[shape.MaterialIndex];
-            ShapeInfo info = new(shape.Name, shape.Record, model.Skeleton, world);
+            ShapeInfo info = new(shape.Name, shape.Record, shape.BoneIndex, model.Skeleton, world);
             Prepare(model.Name, material, info, frame, frameBlocks);
             _services.Device.Apply(material.State);
             foreach (TextureUnit unit in material.Units) _commands.BindTexture((uint)unit.Unit, unit.Texture, unit.Sampler);
@@ -83,13 +83,12 @@ public sealed class ModelDrawer : IDisposable
 
     private GpuBuffer Fill(string key, string block, ProgramEntry program, FrameInfo frame, ShapeInfo? shape)
     {
-        int size = program.BlockSizes[block];
-        GpuBuffer buffer = _blocks.Get(key, size);
-        BlockLayout? layout = _profile.Layout(block);
+        BlockLayout? layout = _profile.Layout(block, shape);
+        GpuBuffer buffer = _blocks.Get(key, Math.Max(program.BlockSizes[block], layout?.Size ?? 0));
         if (layout is null) return buffer;
         BlockWriter writer = new(layout);
         _profile.Fill(block, writer, frame, shape);
-        buffer.Write<byte>(writer.Bytes.AsSpan(0, Math.Min(size, writer.Bytes.Length)));
+        buffer.Write<byte>(writer.Bytes.AsSpan(0, Math.Min(buffer.ByteSize, writer.Bytes.Length)));
         return buffer;
     }
 }

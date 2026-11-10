@@ -27,7 +27,8 @@ public sealed class ModelResourcesBuilder(RenderServices services)
                     shape.Name,
                     services.Content.Shape(shape.Shape),
                     services.Resources.Geometry($"{name}/{shape.Name}", shape.Shape, program.LayoutId, program.Attributes),
-                    shape.MaterialIndex));
+                    shape.MaterialIndex,
+                    shape.BoneIndex));
             }
 
             return new ModelResources(name, services.Content.Skeleton(model.Skeleton), shapes, built);

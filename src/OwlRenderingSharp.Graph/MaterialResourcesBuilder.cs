@@ -28,7 +28,7 @@ public sealed class MaterialResourcesBuilder(RenderServices services)
         if (!program.BlockSizes.TryGetValue(MaterialBlock, out int size)) return null;
         GpuBuffer buffer = new(services.Device, $"{name} material block", size);
         if (material.Block == default) return buffer;
-        byte[] bytes = services.Content.Blob(material.Block).Bytes;
+        byte[] bytes = services.Content.Bytes(material.Block);
         buffer.Write<byte>(bytes.AsSpan(0, Math.Min(bytes.Length, size)));
         return buffer;
     }
