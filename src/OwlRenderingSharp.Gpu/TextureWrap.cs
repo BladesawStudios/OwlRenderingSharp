@@ -8,4 +8,5 @@ public enum TextureWrap
     Mirror,
     Clamp,
     Border,
+    MirrorClamp,
 }

@@ -7,6 +7,7 @@ public enum TextureFilter
     Nearest,
     Linear,
     NearestMipNearest,
+    NearestMipLinear,
     LinearMipNearest,
     LinearMipLinear,
 }

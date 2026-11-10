@@ -51,6 +51,7 @@ public sealed class GpuSampler : IDisposable
         TextureFilter.Nearest => GLEnum.Nearest,
         TextureFilter.Linear => GLEnum.Linear,
         TextureFilter.NearestMipNearest => GLEnum.NearestMipmapNearest,
+        TextureFilter.NearestMipLinear => GLEnum.NearestMipmapLinear,
         TextureFilter.LinearMipNearest => GLEnum.LinearMipmapNearest,
         TextureFilter.LinearMipLinear => GLEnum.LinearMipmapLinear,
         _ => throw new ArgumentOutOfRangeException(nameof(filter)),
@@ -62,6 +63,7 @@ public sealed class GpuSampler : IDisposable
         TextureWrap.Mirror => GLEnum.MirroredRepeat,
         TextureWrap.Clamp => GLEnum.ClampToEdge,
         TextureWrap.Border => GLEnum.ClampToBorder,
+        TextureWrap.MirrorClamp => GLEnum.MirrorClampToEdge,
         _ => throw new ArgumentOutOfRangeException(nameof(wrap)),
     };
 }
