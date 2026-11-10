@@ -17,6 +17,7 @@ public sealed class GamePostChain : IDisposable
     private readonly RenderServices _services;
     private readonly ShaderScreenPass _balance, _compose, _composeWithBloom;
     private readonly BloomPass _bloom;
+    private readonly SsaoChain _occlusion;
 
     public GamePostChain(RenderServices services)
     {
@@ -25,7 +26,11 @@ public sealed class GamePostChain : IDisposable
         _compose = new ShaderScreenPass(services, Archive, "hdr_compose", ComposeBase);
         _composeWithBloom = new ShaderScreenPass(services, Archive, "hdr_compose", ComposeWithBloomPower);
         _bloom = new BloomPass(services.Device);
+        _occlusion = new SsaoChain(services);
     }
+
+    /// <summary>The game's screen-space occlusion of a depth image of the view, one in the first channel where open; owned by the caller.</summary>
+    public GpuTexture Occlusion(GpuTexture depth, Camera camera, SsaoSettings settings) => _occlusion.Run(depth, camera, settings);
 
     public GpuTexture Run(GpuTexture hdr, PostSettings settings)
     {
@@ -66,6 +71,7 @@ public sealed class GamePostChain : IDisposable
 
     public void Dispose()
     {
+        _occlusion.Dispose();
         _bloom.Dispose();
         _composeWithBloom.Dispose();
         _compose.Dispose();

@@ -45,8 +45,11 @@ The colour programs write alpha and leave the cutout to the hardware alpha test 
 
 In Kokiri Forest at noon `CharaLightIntensity` is 0, so that light would not contribute there; it is left unapplied.
 
-## Screen-space occlusion, compute passes (status)
+## Screen-space occlusion (the game's compute programs)
 
-- `GpuComputePass` / `ShaderComputePass` dispatch the game's compute programs (`cp_` blocks and samplers are read by `ProgramBindings`). They are not used for the SSAO chain yet: the Detect/Bilateral/Gaussian parameter blocks (656/144/16 bytes) are only partly decoded and the engine code that fills them (`FUN_7100db6e70` area in the game binary, string `ssao_parameter`) was not traced to values.
-- `AmbientOcclusionPass` is this library's stand-in (depth-ring taps, multiplied onto the lit image, `--ao <strength> --ao-radius <m>` in the snapshot sample). It is not the game's look and darkens direct light too.
-- Depth of field (MainField focal distance 50, range 50) and the fog volumes (neutral black in KokiriForest noon) are no-ops for a lone character, so nothing is applied. Skin scattering is not a post pass (`skin_shading_scatter` has no real stage).
+`SsaoChain` runs the game's `ssao_compute_detect` (alchemy AO) and `ssao_compute_gaussian` from the screen archive; `GamePostChain.Occlusion` exposes it and `--ao <strength> --ao-radius <m>` applies it to the lit image in the snapshot sample.
+The detect block (`Detect`, 656 bytes) was decoded from the program: `[0]` = (radius in uv per metre of depth, -, max radius uv, bias), `[1]` = (spiral turns, 2*radius*intensity, detection intensity, sample count as uint),
+`[2]` = (1/count, -, -, far limit), `[3].x` = contrast power, `[4].z` = aspect, `[36].xy` = (1/near, -(1-near/far)/near) turning hardware depth into distance, `[38].x` = 1, `[40].xy` = (-tan*aspect, -tan) view ray scale.
+`Dynamic` is (width, height, 1/width, 1/height). The programs read the top row first, so the depth is flipped in and the result flipped out. Radii and bias are this library's values (the engine's defaults for them are not readable);
+the sample-pair default of five and the bias 0.12 come from the engine's parameter constructor. The bilateral and horizontal passes of the game are not run. The compute samplers are numbered by handle order (a compute program's first handle follows its constant buffers).
+`AmbientOcclusionPass.Run` remains as a fallback with no archive. Depth of field (MainField focal distance 50, range 50) and the fog volumes (neutral in KokiriForest noon) are no-ops for a lone character; skin scattering is not a post pass (`skin_shading_scatter` has no real stage).

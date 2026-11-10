@@ -29,8 +29,8 @@ public sealed class ShaderComputePass : IDisposable
         _name = $"{archive}/{model} program {program}";
         PreparedModel prepared = services.Content.Shaders(archive).Model(model) ?? throw new BfShaderFormatException($"{archive} has no shading model {model}");
         if (program < 0 || program >= prepared.ProgramCount) throw new BfShaderFormatException($"{_name} does not exist");
-        string compute = prepared.Glsl(program, ShaderStage.Compute) ?? throw new BfShaderFormatException($"{_name} has no compute stage");
-        _bindings = ProgramBindings.For(prepared, program, compute, null);
+        string compute = GlslCompatibility.Rewrite(prepared.Glsl(program, ShaderStage.Compute) ?? throw new BfShaderFormatException($"{_name} has no compute stage"));
+                _bindings = ProgramBindings.For(prepared, program, compute, null);
         _blockSizes = prepared.Blocks().GroupBy(b => b.Name).ToDictionary(g => g.Key, g => g.Max(b => b.ByteSize));
         _program = new GpuProgram(services.Device, _name, new Dictionary<GpuShaderStage, string> { [GpuShaderStage.Compute] = compute });
         foreach (BlockBinding block in _bindings.Blocks) _program.TryBindUniformBlock(block.GlslName, (uint)services.Points.Get(block.GsysName));

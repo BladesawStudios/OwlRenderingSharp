@@ -21,7 +21,7 @@ public static class ModelSnapshot
     public static byte[] RenderSmooth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null, PostSettings? post = null, int supersample = 2, bool fxaa = true, GamePostChain? chain = null)
     {
         using GpuTexture hdr = new(device, "snapshot hdr", GpuFormat.Rgba16F, width * supersample, height * supersample);
-        DrawInto(device, drawer, model, camera, hdr, background, scene);
+        DrawInto(device, drawer, model, camera, hdr, background, scene, chain);
         using GpuTexture resolved = new(device, "snapshot resolved", GpuFormat.Rgba8, width, height);
         using GpuFramebuffer resolvedTarget = new(device, "snapshot resolved", [resolved]);
         if (chain is null)
@@ -50,7 +50,7 @@ public static class ModelSnapshot
         return TopRowFirst(read(color), width, height);
     }
 
-    private static void DrawInto(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, Vector4 background, SnapshotScene? scene)
+    private static void DrawInto(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, Vector4 background, SnapshotScene? scene, GamePostChain? chain = null)
     {
         scene ??= new SnapshotScene();
         int width = color.Width, height = color.Height;
@@ -76,7 +76,14 @@ public static class ModelSnapshot
         if (!occlude) return;
         using GpuFramebuffer occluded = new(device, "snapshot occluded", [color]);
         using AmbientOcclusionPass pass = new(device);
-        pass.Run(unoccluded!, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, occluded);
+        if (chain is null)
+        {
+            pass.Run(unoccluded!, viewDepth, camera, scene.OcclusionRadius, scene.OcclusionStrength, occluded);
+            return;
+        }
+
+        using GpuTexture open = chain.Occlusion(viewDepth, camera, new SsaoSettings(Radius: scene.OcclusionRadius));
+        pass.Apply(unoccluded!, open, scene.OcclusionStrength, occluded);
         device.Check("ModelSnapshot.Render", model.Name);
     }
 

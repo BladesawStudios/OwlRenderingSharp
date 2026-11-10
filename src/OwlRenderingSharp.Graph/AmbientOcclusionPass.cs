@@ -4,6 +4,7 @@ namespace OwlRenderingSharp.Graph;
 
 /// <summary>Darkens a lit image where nearby geometry crowds a pixel, from the view depth image alone.</summary>
 /// <remarks>
+/// <see cref="Apply"/> instead multiplies an occlusion image (the game's, from <see cref="SsaoChain"/>) onto the lit image.
 /// This stands in for the game's screen-space occlusion (the compute chain that detects, blurs and merges into the shadow prepass), whose parameter blocks are not decoded. For each pixel it
 /// rebuilds the view-space position from the hardware depth (near over distance, as the game's programs do) and counts how many of a fixed ring of taps within <c>radius</c> metres lie in front of
 /// the pixel's own surface by more than a small bias, range-checked so far-away geometry does not darken. The colour is multiplied by
@@ -45,13 +46,29 @@ public sealed class AmbientOcclusionPass : IDisposable
         }
         """;
 
+    private const string ApplySource = """
+        #version 450 core
+        layout (binding = 0) uniform sampler2D colorImage;
+        layout (binding = 1) uniform sampler2D occlusionImage;
+        layout (std140, binding = 0) uniform Params { vec4 settings; };
+        in vec2 uv;
+        out vec4 color;
+        void main()
+        {
+            vec4 lit = texelFetch(colorImage, ivec2(gl_FragCoord.xy), 0);
+            float open = texelFetch(occlusionImage, ivec2(gl_FragCoord.xy), 0).r;
+            color = vec4(lit.rgb * (1.0 - settings.x * (1.0 - open)), lit.a);
+        }
+        """;
+
     private readonly GpuDevice _device;
-    private readonly GpuScreenPass _pass;
+    private readonly GpuScreenPass _pass, _apply;
 
     public AmbientOcclusionPass(GpuDevice device)
     {
         _device = device;
         _pass = new GpuScreenPass(device, "ambient occlusion", Source);
+        _apply = new GpuScreenPass(device, "ambient occlusion apply", ApplySource);
     }
 
     public void Run(GpuTexture lit, GpuTexture depth, Camera camera, float radius, float strength, GpuFramebuffer target)
@@ -62,5 +79,16 @@ public sealed class AmbientOcclusionPass : IDisposable
         _pass.Run(target, [lit.Handle, depth.Handle], parameters);
     }
 
-    public void Dispose() => _pass.Dispose();
+    public void Apply(GpuTexture lit, GpuTexture occlusion, float strength, GpuFramebuffer target)
+    {
+        using GpuBuffer parameters = new(_device, "ambient occlusion apply parameters", 16);
+        parameters.Write<float>([strength, 0f, 0f, 0f]);
+        _apply.Run(target, [lit.Handle, occlusion.Handle], parameters);
+    }
+
+    public void Dispose()
+    {
+        _apply.Dispose();
+        _pass.Dispose();
+    }
 }

@@ -62,7 +62,7 @@ public sealed partial class ProgramBindings
             }
 
             foreach (GlslSampler sampler in stage.Samplers)
-                samplers.Add(new SamplerBinding(sampler.Name, isVertex, sampler.Binding, sampler.Type, Lookup(samplerNames, isVertex, SlotOfSampler(sampler.Name), sampler.Name)));
+                samplers.Add(new SamplerBinding(sampler.Name, isVertex, sampler.Binding, sampler.Type, Lookup(samplerNames, isVertex, SlotOfSampler(sampler.Name, stage.Samplers), sampler.Name)));
         }
 
         return new ProgramBindings { Blocks = blocks, Samplers = samplers, StorageBlocks = storage, UsesSupportBuffer = support };
@@ -74,8 +74,15 @@ public sealed partial class ProgramBindings
     private static int SlotOfBlock(string glslName) =>
         BlockName().Match(glslName) is { Success: true } m ? int.Parse(m.Groups[1].Value) - FirstUserConstantBuffer : throw new BfShaderFormatException($"{glslName} is not a constant buffer name");
 
-    private static int SlotOfSampler(string glslName) =>
-        SamplerName().Match(glslName) is { Success: true } m ? (Convert.ToInt32(m.Groups[1].Value, 16) - FirstSamplerHandle) / 2 : throw new BfShaderFormatException($"{glslName} is not a sampler name");
+    // A compute program's first handle sits after its constant buffers, so its samplers are numbered by their order of handle instead.
+    private static int SlotOfSampler(string glslName, IReadOnlyList<GlslSampler> stageSamplers)
+    {
+        Match m = SamplerName().Match(glslName);
+        if (!m.Success) throw new BfShaderFormatException($"{glslName} is not a sampler name");
+        int handle = Convert.ToInt32(m.Groups[1].Value, 16);
+        if (!glslName.StartsWith("cp_", StringComparison.Ordinal)) return (handle - FirstSamplerHandle) / 2;
+        return stageSamplers.Count(o => o.Name.StartsWith("cp_", StringComparison.Ordinal) && SamplerName().Match(o.Name) is { Success: true } other && Convert.ToInt32(other.Groups[1].Value, 16) < handle);
+    }
 
     [GeneratedRegex(@"^_[vfc]p_c(\d+)$")]
     private static partial Regex BlockName();
