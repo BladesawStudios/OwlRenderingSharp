@@ -22,7 +22,10 @@ public static class OotLights
     public const float HemiScale = 0.4f;
 
     /// <summary>The distance in metres from the camera to the subject that the character light rig is laid out for, and the strengths of its three lights as shares of the sun.</summary>
-    public const float CharacterDistance = 3f, KeyScale = 0.5f, FillScale = 0.2f, RimScale = 0.3f;
+    public const float CharacterDistance = 3f, KeyScale = 0.5f, FillScale = 0.2f, RimScale = 1f;
+
+    /// <summary>The cool colour of the rim light, which lifts a character's edge away from a dark scene.</summary>
+    public static readonly Vector3 RimTint = new(0.45f, 0.75f, 1f);
 
     private static readonly Vector4 Ambient = new(0.10f, 0.11f, 0.13f, 1f);
 
@@ -48,7 +51,7 @@ public static class OotLights
         float d = CharacterDistance;
         writer.Set("PointLightPosition0", new Vector4(-0.6f * d, 0.6f * d, -0.2f * d, 0f)).Set("PointLightColor0", new Vector4(sun * KeyScale, 1f));
         writer.Set("PointLightPosition1", new Vector4(0.7f * d, -0.1f * d, -0.2f * d, 0f)).Set("PointLightColor1", new Vector4(sun * FillScale, 1f));
-        writer.Set("PointLightPosition2", new Vector4(0.4f * d, 0.5f * d, -1.6f * d, 0f)).Set("PointLightColor2", new Vector4(sun * RimScale, 1f));
+        writer.Set("PointLightPosition2", new Vector4(0.4f * d, 0.5f * d, -1.6f * d, 0f)).Set("PointLightColor2", new Vector4(sun * RimTint * RimScale, 1f));
         writer.Set("PointLightRange", new Vector4(1f, 0f, 0f, 0f));
         writer.Set("PointLightRange1", new Vector4(0f, 0f, 0f, 0f));
     }

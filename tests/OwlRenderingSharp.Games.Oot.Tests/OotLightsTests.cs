@@ -49,7 +49,7 @@ public class OotLightsTests
         Vector4 sun = writer.GetVector4("SunColor");
         Assert.Equal(sun.X * OotLights.KeyScale, writer.GetVector4("PointLightColor0").X, 1e-4f);
         Assert.Equal(sun.X * OotLights.FillScale, writer.GetVector4("PointLightColor1").X, 1e-4f);
-        Assert.Equal(sun.X * OotLights.RimScale, writer.GetVector4("PointLightColor2").X, 1e-4f);
+        Assert.Equal(sun.X * OotLights.RimTint.X * OotLights.RimScale, writer.GetVector4("PointLightColor2").X, 1e-4f);
         Vector4 key = writer.GetVector4("PointLightPosition0"), fill = writer.GetVector4("PointLightPosition1"), rim = writer.GetVector4("PointLightPosition2");
         Assert.True(key.X < 0f && key.Y > 0f);
         Assert.True(fill.X > 0f && fill.Y < key.Y);
