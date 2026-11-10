@@ -56,6 +56,9 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
 {
     using RenderServices services = new(device, content);
     using ModelResources model = new ModelResourcesBuilder(services).Build(modelName);
+    if (args.Contains("--list"))
+        foreach (ShapeResources shape in model.Shapes) Console.WriteLine($"{shape.Name}: {model.Materials[shape.MaterialIndex].Name} program {model.Materials[shape.MaterialIndex].Program.Index}");
+
     OotBlockProfile profile = new(new OotBlockLayouts(), Environment());
     IBlockProfile active = profile;
     if (Option("--env-slots") is { } range)

@@ -2,6 +2,11 @@
   "name": "gsys_shape",
   "size": 256,
   "fields": [
-    { "name": "Position", "offset": 64, "type": "Vector4", "evidence": "Vertex slot 4 of program 6183: its xyz is viewed with the context view rows and added to the view-space vertex, so it is the instance position in world space." }
+    { "name": "Position", "offset": 64, "type": "Vector4", "evidence": "Vertex slot 4 of program 6183: its xyz is viewed with the context view rows and added to the view-space vertex, so it is the instance position in world space." },
+    { "name": "HeightFadeBottom", "offset": 160, "type": "Vector4", "evidence": "Fragment slot 10, .y only, program 6183: subtracted from the height term and from slot 11 to form the divisor of a clamped vertical gradient." },
+    { "name": "HeightFadeTop", "offset": 176, "type": "Vector4", "evidence": "Fragment slot 11, .y only: the top of the gradient, so (height - bottom) / (top - bottom)." },
+    { "name": "HeightFadeOffset", "offset": 192, "type": "Vector4", "evidence": "Fragment slot 12, .y only: added to the height term before the gradient." },
+    { "name": "HeightFadeBase", "offset": 208, "type": "Vector4", "evidence": "Fragment slot 13, .y only: subtracted from the fragment's view-space y before the gradient." },
+    { "name": "LightIndex", "offset": 224, "type": "Vector4", "evidence": "Fragment slot 14, .x only: two 16-bit halves multiplied by 144 and used as indices into a table of lights; zero selects the first entry." }
   ]
 }

@@ -11,7 +11,8 @@ public class OotBlockLayoutsTests
         Assert.Equal(13552, layouts.Find(OotBlockLayouts.Context)!.Size);
         Assert.Equal(64, layouts.Find(OotBlockLayouts.Shape)!.Field("Position").Offset);
         Assert.Equal(1824, layouts.Find(OotBlockLayouts.Environment)!.Size);
-        Assert.Null(layouts.Find("gsys_scene_material"));
+        Assert.Equal(240, layouts.Find(OotBlockLayouts.SceneMaterial)!.Size);
+        Assert.Equal(1168, layouts.Find(OotBlockLayouts.Environment)!.Field("HemiSky").Offset);
     }
 
     [Fact]

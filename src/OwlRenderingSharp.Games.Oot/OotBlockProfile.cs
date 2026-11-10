@@ -24,7 +24,7 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
     {
         "gsys_material" => BlockScope.Material,
         OotBlockLayouts.Shape or OotBlockLayouts.Skeleton => BlockScope.Shape,
-        OotBlockLayouts.Context or OotBlockLayouts.Environment or "gsys_scene_material" => BlockScope.Frame,
+        OotBlockLayouts.Context or OotBlockLayouts.Environment or OotBlockLayouts.SceneMaterial => BlockScope.Frame,
         _ => BlockScope.Unknown,
     };
 
@@ -39,15 +39,24 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
                 FillContext(writer, frame);
                 break;
             case OotBlockLayouts.Environment:
-                OotLights.Fill(writer, Environment, frame.Camera.ViewMatrix());
+                OotLights.Fill(writer, Environment);
+                break;
+            case OotBlockLayouts.SceneMaterial:
+                writer.Set("AmbientBlend", new Vector4(0f, 1f, 0f, 0f)).Set("LightScale", new Vector4(1f, 1f, 0f, 0f));
                 break;
             case OotBlockLayouts.Shape when shape is not null:
-                writer.Set("Position", new Vector4(shape.World.Translation, 1f));
+                FillShape(writer, shape);
                 break;
             case OotBlockLayouts.Skeleton when shape is not null:
                 FillPalette(writer, shape);
                 break;
         }
+    }
+
+    private static void FillShape(BlockWriter writer, ShapeInfo shape)
+    {
+        writer.Set("Position", new Vector4(shape.World.Translation, 1f));
+        writer.Set("HeightFadeBottom", Vector4.Zero).Set("HeightFadeTop", Vector4.One).Set("HeightFadeOffset", Vector4.Zero).Set("HeightFadeBase", Vector4.Zero);
     }
 
     // The shader indexes the palette by the skeleton's matrix number, not by the shape's own list of skin bones.
@@ -76,6 +85,14 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
         writer.Set("DepthScale", new Vector4(1f / (far - near), near / (far - near), aspect, 1f / aspect));
         writer.Set("FarMinusNear", new Vector4(far - near, 1f / (1f - near / far), 0f, 0f));
         writer.Set("FieldOfView", new Vector4(aspect * tanHalf, tanHalf, camera.FovRadians, 0f));
+        writer.Set("ProjectionA", ScreenRows(projection)).Set("ProjectionB", ScreenRows(projection)).Set("ShadowScale", new Vector4(1f, 1f, 0f, 0f)).Set("ScreenFade", new Vector4(1f, 1f, 0f, 0f));
         writer.Set("Resolution", new Vector4(frame.Width, frame.Height, 1f / frame.Width, 1f / frame.Height));
     }
+
+    // The x, y and w rows of a projection in the form a 3x4 field takes: its third written row is the w row, which the matrix's columns 1, 2 and 4 supply.
+    private static Matrix4x4 ScreenRows(Matrix4x4 m) => new(
+        m.M11, m.M12, m.M14, m.M14,
+        m.M21, m.M22, m.M24, m.M24,
+        m.M31, m.M32, m.M34, m.M34,
+        m.M41, m.M42, m.M44, m.M44);
 }

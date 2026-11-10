@@ -2,15 +2,185 @@
   "name": "gsys_environment",
   "size": 1824,
   "fields": [
-    { "name": "Ambient", "offset": 0, "type": "Vector4", "evidence": "Slot 0, the first light slot; WildRenderingSharp GsysEnvironment.Ambient says both games lay the light slots out the same. Not yet confirmed against an OoT program." },
-    { "name": "HemiSky", "offset": 16, "type": "Vector4", "evidence": "Slot 1 (WildRenderingSharp GsysEnvironment.HemiSky)." },
-    { "name": "HemiGround", "offset": 32, "type": "Vector4", "evidence": "Slot 2 (WildRenderingSharp GsysEnvironment.HemiGround)." },
-    { "name": "HemiDirection", "offset": 48, "type": "Vector4", "evidence": "Slot 3 (WildRenderingSharp GsysEnvironment.HemiDirection): the up axis the hemisphere blends along." },
-    { "name": "LightDirection0", "offset": 64, "type": "Vector4", "evidence": "Slot 4 (WildRenderingSharp): the direction the main light travels, in view space." },
-    { "name": "LightColor0", "offset": 80, "type": "Vector4", "evidence": "Slot 5 (WildRenderingSharp)." },
-    { "name": "LightSpecularColor0", "offset": 96, "type": "Vector4", "evidence": "Slot 6 (WildRenderingSharp)." },
-    { "name": "LightDirection1", "offset": 112, "type": "Vector4", "evidence": "Slot 7 (WildRenderingSharp): the second light." },
-    { "name": "LightColor1", "offset": 128, "type": "Vector4", "evidence": "Slot 8 (WildRenderingSharp)." },
-    { "name": "LightSpecularColor1", "offset": 144, "type": "Vector4", "evidence": "Slot 9 (WildRenderingSharp)." }
+    {
+      "name": "LightColor0",
+      "offset": 64,
+      "type": "Vector4",
+      "evidence": "Slot 4 xyz, programs 20052 and 17163 (skin, hair): the colour paired with the world-space light direction (slot 23) in the diffuse term, so it is the main light colour."
+    },
+    {
+      "name": "SunColor",
+      "offset": 80,
+      "type": "Vector4",
+      "evidence": "Slot 5 xyz, program 6183: multiplied by the lit terms in both branches of the flag that selects the light path; the sweep gave a small effect. The main light colour."
+    },
+    {
+      "name": "PointLightPosition0",
+      "offset": 112,
+      "type": "Vector4",
+      "evidence": "Slot 7 xyz: view-space vector (slot - fragment view position) is squared and summed, inverse-sqrt normalised and dotted with the normal: a point light position."
+    },
+    {
+      "name": "PointLightColor0",
+      "offset": 128,
+      "type": "Vector4",
+      "evidence": "Slot 8 xyz: multiplies the first point light's lit terms."
+    },
+    {
+      "name": "LightDirectionWorld",
+      "offset": 368,
+      "type": "Vector4",
+      "evidence": "Slot 23 xyz, negated and dotted with the world normal; same slot as TotK LightDir0World (WildRenderingSharp)."
+    },
+    {
+      "name": "ShadowBias",
+      "offset": 880,
+      "type": "Vector4",
+      "evidence": "Slot 55 .w: added to the clamped light term before the final clamp."
+    },
+    {
+      "name": "ShadowScale",
+      "offset": 896,
+      "type": "Vector4",
+      "evidence": "Slot 56 .y: multiplier on two lit terms near the end of program 6183."
+    },
+    {
+      "name": "SkinAmbientScale",
+      "offset": 944,
+      "type": "Vector4",
+      "evidence": "Slot 59 .x, program 20052: fma(x, 0.667, 1) and fma(x, 0.818, 1), a pair of lighting gains."
+    },
+    {
+      "name": "DepthBias",
+      "offset": 960,
+      "type": "Vector4",
+      "evidence": "Slot 60 .zw: w - z is added to a value read from a depth storage buffer."
+    },
+    {
+      "name": "TerminatorRamp",
+      "offset": 976,
+      "type": "Vector4",
+      "evidence": "Slot 61 .xy: ((x term) - .x) * .y clamped, a light ramp."
+    },
+    {
+      "name": "AmbientScale",
+      "offset": 1088,
+      "type": "Vector4",
+      "evidence": "Slot 68 .x: multiplies slot 70 and enters fma(x, .., 1) twice."
+    },
+    {
+      "name": "ShadowTint",
+      "offset": 1104,
+      "type": "Vector4",
+      "evidence": "Slot 69 .xy, program 20052: (y - 1) * x, a blend toward a shadow tint."
+    },
+    {
+      "name": "AmbientColor",
+      "offset": 1120,
+      "type": "Vector4",
+      "evidence": "Slot 70 xyz: times slot 68 .x, times two lit terms."
+    },
+    {
+      "name": "PointLightColor2",
+      "offset": 1136,
+      "type": "Vector4",
+      "evidence": "Slot 71 xyz, program 17163 (hair): multiplies the third point light's term."
+    },
+    {
+      "name": "PointLightPosition2",
+      "offset": 1152,
+      "type": "Vector4",
+      "evidence": "Slot 72 xyz, program 17163: negated and added to the view-space position like slots 7 and 87, a third point light position."
+    },
+    {
+      "name": "HemiSky",
+      "offset": 1168,
+      "type": "Vector4",
+      "evidence": "Slot 73 xyz: lerp(slot 74, slot 73, normal.y*0.5+0.5), so it is the colour of the up direction."
+    },
+    {
+      "name": "HemiGround",
+      "offset": 1184,
+      "type": "Vector4",
+      "evidence": "Slot 74 xyz: the lerp origin, the colour of the down direction."
+    },
+    {
+      "name": "LightVolume",
+      "offset": 1200,
+      "type": "Vector4",
+      "evidence": "Slot 75: xyz + w * world position is the coordinate sampled from a 3D texture (a light volume): xyz offset, w scale."
+    },
+    {
+      "name": "LightVolumeBlend",
+      "offset": 1216,
+      "type": "Vector4",
+      "evidence": "Slot 76: .w and .z/.x/.y scale terms of the sampled volume colour."
+    },
+    {
+      "name": "SpecularBias",
+      "offset": 1264,
+      "type": "Vector4",
+      "evidence": "Slot 79 .x: added to the negated y term of a normal."
+    },
+    {
+      "name": "SkinRamp",
+      "offset": 1280,
+      "type": "Vector4",
+      "evidence": "Slot 80, programs 20052 and 17163: fma(x, .w, .z) + .y remaps a lit term; .x also scales a lit term near the end."
+    },
+    {
+      "name": "SkinScales",
+      "offset": 1296,
+      "type": "Vector4",
+      "evidence": "Slot 81: .x fma(c, x, 1) gain on three colour terms, .y and .z scale later terms."
+    },
+    {
+      "name": "SurfaceScales",
+      "offset": 1312,
+      "type": "Vector4",
+      "evidence": "Slot 82: .x scales three colour channels before a max against the light sum (this is what whitens hair when large), .y a combined term, .w another (hair)."
+    },
+    {
+      "name": "SpecularScales",
+      "offset": 1328,
+      "type": "Vector4",
+      "evidence": "Slot 83 .zw, program 20052: scale two specular terms."
+    },
+    {
+      "name": "PointLightColor1",
+      "offset": 1376,
+      "type": "Vector4",
+      "evidence": "Slot 86 xyz: multiplies the second point light, as slot 8 does the first."
+    },
+    {
+      "name": "PointLightPosition1",
+      "offset": 1392,
+      "type": "Vector4",
+      "evidence": "Slot 87 xyz: second point light position, used as slot 7 is."
+    },
+    {
+      "name": "PointLightRange",
+      "offset": 1472,
+      "type": "Vector4",
+      "evidence": "Slot 92 xyzw: attenuation terms of the point lights (offsets and scales added/multiplied on distance)."
+    },
+    {
+      "name": "PointLightRange1",
+      "offset": 1488,
+      "type": "Vector4",
+      "evidence": "Slot 93 .xy: scales of the squared-distance terms."
+    },
+    {
+      "name": "ReflectionLod",
+      "offset": 1552,
+      "type": "Vector4",
+      "evidence": "Slot 97 .x: the level of detail of the environment cube map read and a roughness multiplier."
+    },
+    {
+      "name": "DepthLimit",
+      "offset": 1808,
+      "type": "Vector4",
+      "evidence": "Slot 113 .x: the integer minimum of the storage buffer value and this float's bits."
+    }
   ]
 }

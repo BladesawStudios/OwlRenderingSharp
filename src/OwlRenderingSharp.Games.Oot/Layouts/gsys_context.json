@@ -2,14 +2,83 @@
   "name": "gsys_context",
   "size": 13552,
   "fields": [
-    { "name": "View", "offset": 0, "type": "Matrix3x4", "evidence": "Vertex slots 0-2 of program 6183 are dotted with the instance position and the vertex to reach view space; the same slots as the WildRenderingSharp GsysContext view matrix." },
-    { "name": "ViewProjection", "offset": 48, "type": "Matrix4x4", "evidence": "Slots 3-6, as WildRenderingSharp GsysContext.ViewProjection; not read by program 6183." },
-    { "name": "Projection", "offset": 112, "type": "Matrix4x4", "evidence": "Vertex slots 7-10 of program 6183 produce gl_Position from the view-space position." },
-    { "name": "InverseView", "offset": 176, "type": "Matrix3x4", "evidence": "Slots 11-13, as WildRenderingSharp GsysContext.InverseView; read by the fragment stage of program 6183." },
-    { "name": "NearFar", "offset": 224, "type": "Vector4", "evidence": "Slot 14: near, far, near/far, 1 - near/far (WildRenderingSharp GsysContext.NearFar)." },
-    { "name": "DepthScale", "offset": 240, "type": "Vector4", "evidence": "Slot 15: 1/(far-near), near/(far-near), aspect, 1/aspect (WildRenderingSharp)." },
-    { "name": "FarMinusNear", "offset": 256, "type": "Vector4", "evidence": "Slot 16: far-near, 1/(1-near/far) (WildRenderingSharp)." },
-    { "name": "FieldOfView", "offset": 272, "type": "Vector4", "evidence": "Slot 17: aspect*tan(fov/2), tan(fov/2), fov (WildRenderingSharp)." },
-    { "name": "Resolution", "offset": 288, "type": "Vector4", "evidence": "Slot 18: width, height, 1/width, 1/height (WildRenderingSharp)." }
+    {
+      "name": "View",
+      "offset": 0,
+      "type": "Matrix3x4",
+      "evidence": "Vertex slots 0-2 of program 6183 are dotted with the instance position and the vertex to reach view space; the same slots as the WildRenderingSharp GsysContext view matrix."
+    },
+    {
+      "name": "ViewProjection",
+      "offset": 48,
+      "type": "Matrix4x4",
+      "evidence": "Slots 3-6, as WildRenderingSharp GsysContext.ViewProjection; not read by program 6183."
+    },
+    {
+      "name": "Projection",
+      "offset": 112,
+      "type": "Matrix4x4",
+      "evidence": "Vertex slots 7-10 of program 6183 produce gl_Position from the view-space position."
+    },
+    {
+      "name": "InverseView",
+      "offset": 176,
+      "type": "Matrix3x4",
+      "evidence": "Slots 11-13, as WildRenderingSharp GsysContext.InverseView; read by the fragment stage of program 6183."
+    },
+    {
+      "name": "NearFar",
+      "offset": 224,
+      "type": "Vector4",
+      "evidence": "Slot 14: near, far, near/far, 1 - near/far (WildRenderingSharp GsysContext.NearFar)."
+    },
+    {
+      "name": "DepthScale",
+      "offset": 240,
+      "type": "Vector4",
+      "evidence": "Slot 15: 1/(far-near), near/(far-near), aspect, 1/aspect (WildRenderingSharp)."
+    },
+    {
+      "name": "FarMinusNear",
+      "offset": 256,
+      "type": "Vector4",
+      "evidence": "Slot 16: far-near, 1/(1-near/far) (WildRenderingSharp)."
+    },
+    {
+      "name": "FieldOfView",
+      "offset": 272,
+      "type": "Vector4",
+      "evidence": "Slot 17: aspect*tan(fov/2), tan(fov/2), fov (WildRenderingSharp)."
+    },
+    {
+      "name": "Resolution",
+      "offset": 288,
+      "type": "Vector4",
+      "evidence": "Slot 18: width, height, 1/width, 1/height (WildRenderingSharp)."
+    },
+    {
+      "name": "ProjectionA",
+      "offset": 560,
+      "type": "Matrix3x4",
+      "evidence": "Fragment slots 35-37 of program 6183: three rows applied to the view-space position, the first two divided by the third, giving a screen coordinate. Filled with the projection's x, y and w rows (the previous-frame or second-camera role is not known)."
+    },
+    {
+      "name": "ProjectionB",
+      "offset": 608,
+      "type": "Matrix3x4",
+      "evidence": "Fragment slots 38-40 of program 6183: a second projective triple like ProjectionA (x row 38, y row 39, w row 40)."
+    },
+    {
+      "name": "ScreenFade",
+      "offset": 656,
+      "type": "Vector4",
+      "evidence": "Slot 41 .xy, programs 6183, 20052, 17163: multiply two clamped screen-edge terms, so (1, 1) leaves them whole."
+    },
+    {
+      "name": "ShadowScale",
+      "offset": 1024,
+      "type": "Vector4",
+      "evidence": "Fragment slot 64 of program 6183: .x and .y scale terms in the shadow/ambient branch. Neutral value (1, 1) is a guess."
+    }
   ]
 }

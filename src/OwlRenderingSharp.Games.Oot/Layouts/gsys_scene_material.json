@@ -1,0 +1,8 @@
+{
+  "name": "gsys_scene_material",
+  "size": 240,
+  "fields": [
+    { "name": "AmbientBlend", "offset": 0, "type": "Vector4", "evidence": "Fragment slot 0 of program 6183: .z is the bias and .y the scale of a clamped fma on a normal term (clamp(a*b + z) * y)." },
+    { "name": "LightScale", "offset": 32, "type": "Vector4", "evidence": "Fragment slot 2 of program 6183: .x scales the sky/ground light mix and .y a second shaded term." }
+  ]
+}

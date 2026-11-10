@@ -6,10 +6,10 @@ namespace OwlRenderingSharp.Games.Oot.Tests;
 
 public class OotLightsTests
 {
-    private static BlockWriter Fill(OotEnvironment environment, Matrix4x4? view = null)
+    private static BlockWriter Fill(OotEnvironment environment)
     {
         BlockWriter writer = new(new OotBlockLayouts().Find(OotBlockLayouts.Environment)!);
-        OotLights.Fill(writer, environment, view ?? Matrix4x4.Identity);
+        OotLights.Fill(writer, environment);
         return writer;
     }
 
@@ -19,7 +19,7 @@ public class OotLightsTests
     public void TheSunIsItsColorTimesIntensityOverTwoToTheExposure()
     {
         EnvPalette palette = Palette(("ExposureValue", 10.0), ("BgDifIntensity", 10240.0), ("BgDifColor", new Dictionary<string, object?> { ["R"] = 1.0, ["G"] = 0.5, ["B"] = 0.0 }));
-        Vector4 color = Fill(new OotEnvironment(palette, 0, 45)).GetVector4("LightColor0");
+        Vector4 color = Fill(new OotEnvironment(palette, 0, 45)).GetVector4("SunColor");
         Assert.Equal(10f, color.X, 1e-4f);
         Assert.Equal(5f, color.Y, 1e-4f);
         Assert.Equal(0f, color.Z, 1e-4f);
@@ -34,22 +34,20 @@ public class OotLightsTests
     }
 
     [Fact]
-    public void TheMainLightTravelsAwayFromTheSun()
+    public void TheMainLightTravelsAwayFromTheSunInWorldSpace()
     {
         Vector3 toSun = OotLights.ToSun(new OotEnvironment(Palette(), 90, 0));
         Assert.Equal(1f, toSun.X, 1e-5f);
-        Vector4 travel = Fill(new OotEnvironment(Palette(), 90, 0)).GetVector4("LightDirection0");
+        Vector4 travel = Fill(new OotEnvironment(Palette(), 90, 0)).GetVector4("LightDirectionWorld");
         Assert.Equal(-1f, travel.X, 1e-5f);
     }
 
     [Fact]
-    public void TheMainLightDirectionIsGivenInViewSpace()
+    public void ThePointLightsAreInertAndFarAway()
     {
-        Matrix4x4 view = Matrix4x4.CreateRotationY(MathF.PI / 2);
-        Vector4 travel = Fill(new OotEnvironment(Palette(), 0, 0), view).GetVector4("LightDirection0");
-        Vector3 expected = -Vector3.TransformNormal(Vector3.UnitZ, view);
-        Assert.Equal(expected.X, travel.X, 1e-5f);
-        Assert.Equal(expected.Z, travel.Z, 1e-5f);
+        BlockWriter writer = Fill(OotEnvironment.Neutral);
+        Assert.Equal(Vector4.Zero, writer.GetVector4("PointLightColor0"));
+        Assert.Equal(1e6f, writer.GetVector4("PointLightPosition1").Y);
     }
 
     [Fact]

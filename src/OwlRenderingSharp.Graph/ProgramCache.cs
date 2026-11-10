@@ -51,6 +51,7 @@ public sealed class ProgramCache(GpuDevice device, ContentSet content, BlockBind
             bindings,
             $"{archiveName}/{shadingModel}",
             model.Attributes().ToDictionary(a => a.Name, a => a.Location),
-            model.Blocks().GroupBy(b => b.Name).ToDictionary(g => g.Key, g => g.Max(b => b.ByteSize)));
+            model.Blocks().GroupBy(b => b.Name).ToDictionary(g => g.Key, g => g.Max(b => b.ByteSize)),
+            program);
     }
 }
