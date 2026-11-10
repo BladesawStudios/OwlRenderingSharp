@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Opens the asset packs and prepared shader archives BfShaderSharp writes and hands out models, materials and textures as plain data. No GL.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OwlRenderingSharp.Core\OwlRenderingSharp.Core.csproj" />
+    <ProjectReference Include="..\..\vendor\BfShaderSharp\src\BfShaderSharp\BfShaderSharp.csproj" />
+  </ItemGroup>
+
+</Project>
