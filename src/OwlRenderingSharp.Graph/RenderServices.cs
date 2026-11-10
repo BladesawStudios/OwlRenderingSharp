@@ -10,7 +10,7 @@ namespace OwlRenderingSharp.Graph;
 /// </remarks>
 public sealed class RenderServices : IDisposable
 {
-    public RenderServices(GpuDevice device, ContentSet content)
+    public RenderServices(GpuDevice device, ContentSet content, PassOptions? options = null)
     {
         Device = device;
         Content = content;
@@ -19,6 +19,7 @@ public sealed class RenderServices : IDisposable
         Resources = new GpuResourceCache(device, content);
         Samplers = new GpuSamplerCache(device);
         Neutral = new GpuNeutralTextures(device);
+        Selector = new PassProgramSelector(content, options ?? PassOptions.Standalone);
     }
 
     public GpuDevice Device { get; }
@@ -34,6 +35,8 @@ public sealed class RenderServices : IDisposable
     public GpuSamplerCache Samplers { get; }
 
     public GpuNeutralTextures Neutral { get; }
+
+    public PassProgramSelector Selector { get; }
 
     public void Dispose()
     {

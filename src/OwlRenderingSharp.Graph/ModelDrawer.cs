@@ -31,21 +31,17 @@ public sealed class ModelDrawer : IDisposable
         _storage = new GpuBuffer(services.Device, "zero storage", StorageBytes);
     }
 
-    public void Draw(ModelResources model, FrameInfo frame, Matrix4x4 world)
+    public void Draw(ModelResources model, FrameInfo frame, Matrix4x4 world) => Draw(model, frame, world, PassPlan.Forward);
+
+    public void Draw(ModelResources model, FrameInfo frame, Matrix4x4 world, PassPlan plan)
     {
         _support.Write<byte>(SupportBufferData.Create(frame.Width, frame.Height));
         _commands.BindUniform(BlockBindingPoints.SupportBuffer, _support);
         for (uint slot = 0; slot < StorageSlots; slot++) _commands.BindStorage(slot, _storage);
         HashSet<string> frameBlocks = [];
-        foreach (ShapeResources shape in model.Shapes)
-        {
-            MaterialResources material = model.Materials[shape.MaterialIndex];
-            ShapeInfo info = new(shape.Name, shape.Record, shape.BoneIndex, model.Skeleton, world);
-            Prepare(model.Name, material, info, frame, frameBlocks);
-            _services.Device.Apply(material.State);
-            foreach (TextureUnit unit in material.Units) _commands.BindTexture((uint)unit.Unit, unit.Texture, unit.Sampler);
-            _commands.Draw(shape.Geometry.Meshes[0], "ModelDrawer.Draw", $"{model.Name}/{shape.Name}");
-        }
+        foreach (RenderPass pass in plan.Passes)
+            foreach (ShapeResources shape in Ordered(model, pass))
+                DrawShape(model, shape, pass, frame, world, frameBlocks);
     }
 
     public void Dispose()
@@ -55,10 +51,29 @@ public sealed class ModelDrawer : IDisposable
         _storage.Dispose();
     }
 
-    private void Prepare(string model, MaterialResources material, ShapeInfo shape, FrameInfo frame, HashSet<string> frameBlocks)
+    // Opaque shapes come before blended ones, each group by the material's priority and then in model order. A depth-only pass leaves the blended shapes out.
+    private static IEnumerable<ShapeResources> Ordered(ModelResources model, RenderPass pass) => model.Shapes
+        .Select((shape, index) => (shape, index, material: model.Materials[shape.MaterialIndex]))
+        .Where(s => !(pass.DepthOnly() && s.material.Blends))
+        .OrderBy(s => s.material.Blends).ThenBy(s => s.material.Priority).ThenBy(s => s.index)
+        .Select(s => s.shape);
+
+    private void DrawShape(ModelResources model, ShapeResources shape, RenderPass pass, FrameInfo frame, Matrix4x4 world, HashSet<string> frameBlocks)
     {
-        _commands.UseProgram(material.Program.Program);
-        foreach (BlockBinding block in material.Program.Bindings.Blocks.DistinctBy(b => b.GsysName))
+        MaterialResources material = model.Materials[shape.MaterialIndex];
+        MaterialPass? chosen = material.Pass(pass, shape.Record.SkinCount);
+        if (chosen is null) return;
+        ShapeInfo info = new(shape.Name, shape.Record, shape.BoneIndex, model.Skeleton, world);
+        Prepare(model.Name, material, chosen.Program, info, frame, frameBlocks);
+        _services.Device.Apply(pass.DepthOnly() ? material.State with { ColorWrite = false, Blend = BlendState.Off } : material.State);
+        foreach (TextureUnit unit in chosen.Units) _commands.BindTexture((uint)unit.Unit, unit.Texture, unit.Sampler);
+        _commands.Draw(shape.Geometry.Meshes[0], $"ModelDrawer.Draw {pass}", $"{model.Name}/{shape.Name}");
+    }
+
+    private void Prepare(string model, MaterialResources material, ProgramEntry program, ShapeInfo shape, FrameInfo frame, HashSet<string> frameBlocks)
+    {
+        _commands.UseProgram(program.Program);
+        foreach (BlockBinding block in program.Bindings.Blocks.DistinctBy(b => b.GsysName))
         {
             uint point = (uint)_services.Points.Get(block.GsysName);
             switch (_profile.Scope(block.GsysName))
@@ -67,15 +82,15 @@ public sealed class ModelDrawer : IDisposable
                     _commands.BindUniform(point, material.Block);
                     break;
                 case BlockScope.Frame when frameBlocks.Add(block.GsysName):
-                    _commands.BindUniform(point, Fill(block.GsysName, block.GsysName, material.Program, frame, null));
+                    _commands.BindUniform(point, Fill(block.GsysName, block.GsysName, program, frame, null));
                     break;
                 case BlockScope.Frame:
                     break;
                 case BlockScope.Shape:
-                    _commands.BindUniform(point, Fill($"{model}/{shape.Name}/{block.GsysName}", block.GsysName, material.Program, frame, shape));
+                    _commands.BindUniform(point, Fill($"{model}/{shape.Name}/{block.GsysName}", block.GsysName, program, frame, shape));
                     break;
                 default:
-                    _commands.BindUniform(point, _blocks.Get(block.GsysName, material.Program.BlockSizes[block.GsysName]));
+                    _commands.BindUniform(point, _blocks.Get(block.GsysName, program.BlockSizes[block.GsysName]));
                     break;
             }
         }

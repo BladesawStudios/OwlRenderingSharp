@@ -15,4 +15,15 @@ public class GpuNeutralTexturesTests(GlFixture gl)
             Assert.NotEqual(neutral.Handle(GpuSamplerKind.Texture2D), neutral.Handle(GpuSamplerKind.Texture3D));
         });
     }
+
+    [SkippableFact]
+    public void ADifferentColourIsADifferentTextureAndTheSameColourComesBack()
+    {
+        gl.Require().Run(device =>
+        {
+            using GpuNeutralTextures neutral = new(device);
+            Assert.NotEqual(neutral.Handle(GpuSamplerKind.Texture2D, 0xFF000000), neutral.Handle(GpuSamplerKind.Texture2D));
+            Assert.Equal(neutral.Handle(GpuSamplerKind.Texture2D, 0xFF000000), neutral.Handle(GpuSamplerKind.Texture2D, 0xFF000000));
+        });
+    }
 }

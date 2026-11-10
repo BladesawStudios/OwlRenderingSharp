@@ -31,4 +31,12 @@ public class MaterialDrawStatesTests
         Assert.Equal((true, false, DepthFunc.GreaterOrEqual), (state.DepthTest, state.DepthWrite, state.DepthFunc));
         Assert.False(MaterialDrawStates.From(Material(("gsys_depth_test_enable", "false"))).DepthTest);
     }
+
+    [Fact]
+    public void ThePriorityIsTheMaterialsOwnOrZero()
+    {
+        MaterialRecord with = new("Model", "model", 0, 0, [], [new RenderInfoRecord("gsys_priority", 0, [21], [], [])], [], [], [], ReadOnlyMemory<byte>.Empty, -1, -1);
+        Assert.Equal(21, MaterialDrawStates.Priority(with));
+        Assert.Equal(0, MaterialDrawStates.Priority(Material()));
+    }
 }

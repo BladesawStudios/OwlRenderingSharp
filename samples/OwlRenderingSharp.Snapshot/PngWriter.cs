@@ -16,7 +16,9 @@ public static class PngWriter
             for (int y = 0; y < height; y++)
             {
                 zlib.WriteByte(0);
-                zlib.Write(rgba.Slice(y * width * 4, width * 4));
+                byte[] row = rgba.Slice(y * width * 4, width * 4).ToArray();
+                for (int x = 3; x < row.Length; x += 4) row[x] = 255;
+                zlib.Write(row);
             }
         }
 

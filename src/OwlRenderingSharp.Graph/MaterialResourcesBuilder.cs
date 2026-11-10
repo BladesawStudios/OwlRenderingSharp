@@ -1,16 +1,16 @@
 using BfShaderSharp.Pack;
 using BfShaderSharp.Pack.Records;
-using OwlRenderingSharp.Content;
 using OwlRenderingSharp.Content.Programs;
 using OwlRenderingSharp.Gpu;
 
 namespace OwlRenderingSharp.Graph;
 
-/// <summary>Builds the <see cref="MaterialResources"/> of a material record.</summary>
+/// <summary>Builds the <see cref="MaterialResources"/> of a material record and the per-pass programs it asks for later.</summary>
 /// <remarks>
-/// The program is the one the pack recorded for the material. Each sampler of the program is resolved through the material's sampler assigns to a sampler record and
-/// from it to a texture; a sampler the material does not assign, or whose texture no pack has, gets the neutral texture of its kind so the read stays defined. The
-/// material block starts as the bytes the pack prepared, padded with zeros to the size the program declares.
+/// The program of the material itself is the one the pack recorded; a pass picks its own through the <see cref="PassProgramSelector"/>. Each sampler of a program is
+/// resolved through the material's sampler assigns to a sampler record and from it to a texture; a sampler the material does not assign, or whose texture no pack has,
+/// gets the neutral texture of its kind (coloured by <see cref="FrameSamplerDefaults"/> for the frame-level ones) so the read stays defined. The material block starts as
+/// the bytes the pack prepared, padded with zeros to the size the program declares.
 /// </remarks>
 public sealed class MaterialResourcesBuilder(RenderServices services)
 {
@@ -20,7 +20,16 @@ public sealed class MaterialResourcesBuilder(RenderServices services)
     public MaterialResources Build(string name, MaterialRecord material)
     {
         ProgramEntry program = services.Programs.Get(material.ShaderArchive, material.ShadingModel, material.Program);
-        return new MaterialResources(name, program, MaterialDrawStates.From(material), Block(name, material, program), Units(name, material, program));
+        return new MaterialResources(name, material, program, MaterialDrawStates.From(material), Block(name, material, program), this);
+    }
+
+    // The program a pass runs this material with for a shape of the given skin weight count, or null when the shading model has none.
+    public MaterialPass? CreatePass(string name, MaterialRecord material, RenderPass pass, int skinCount)
+    {
+        int index = services.Selector.Select(material, pass, skinCount);
+        if (index < 0) return null;
+        ProgramEntry program = services.Programs.Get(material.ShaderArchive, material.ShadingModel, index);
+        return new MaterialPass(program, Units(name, material, program));
     }
 
     private GpuBuffer? Block(string name, MaterialRecord material, ProgramEntry program)
@@ -49,7 +58,7 @@ public sealed class MaterialResourcesBuilder(RenderServices services)
             }
             else
             {
-                units.Add(new TextureUnit(binding.Unit, services.Neutral.Handle(kind), services.Samplers.Get(SamplerState.LinearClamp).Handle));
+                units.Add(new TextureUnit(binding.Unit, services.Neutral.Handle(kind, FrameSamplerDefaults.For(binding.ShaderName)), services.Samplers.Get(SamplerState.LinearClamp).Handle));
             }
         }
 
