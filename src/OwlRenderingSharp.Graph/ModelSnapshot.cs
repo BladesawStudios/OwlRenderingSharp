@@ -18,10 +18,11 @@ public static class ModelSnapshot
         Draw(device, drawer, model, camera, width, height, background, scene, GpuFormat.Rgba16F, t => t.DownloadAsFloats());
 
     /// <summary>Draws at <paramref name="supersample"/> times the size, tone maps and averages down to the requested size, then smooths the edges with <see cref="FxaaPass"/> unless <paramref name="fxaa"/> is off.</summary>
-    public static byte[] RenderSmooth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null, PostSettings? post = null, int supersample = 2, bool fxaa = true, GamePostChain? chain = null)
+    public static byte[] RenderSmooth(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene = null, PostSettings? post = null, int supersample = 2, bool fxaa = true, GamePostChain? chain = null, bool transparent = false)
     {
         using GpuTexture hdr = new(device, "snapshot hdr", GpuFormat.Rgba16F, width * supersample, height * supersample);
-        DrawInto(device, drawer, model, camera, hdr, background, scene, chain);
+        using GpuTexture? coverage = transparent ? new GpuTexture(device, "snapshot coverage", GpuFormat.Rgba8, hdr.Width, hdr.Height) : null;
+        DrawInto(device, drawer, model, camera, hdr, background, scene, chain, coverage);
         using GpuTexture resolved = new(device, "snapshot resolved", GpuFormat.Rgba8, width, height);
         using GpuFramebuffer resolvedTarget = new(device, "snapshot resolved", [resolved]);
         if (chain is null)
@@ -35,11 +36,20 @@ public static class ModelSnapshot
             using DownsamplePass downsample = new(device);
             downsample.Run(display, supersample, resolvedTarget);
         }
-        if (!fxaa) return TopRowFirst(resolved.Download<byte>(), width, height);
+        GpuTexture finished = resolved;
         using GpuTexture smoothed = new(device, "snapshot smoothed", GpuFormat.Rgba8, width, height);
-        using GpuFramebuffer smoothedTarget = new(device, "snapshot smoothed", [smoothed]);
-        using (FxaaPass pass = new(device)) pass.Run(resolved, smoothedTarget);
-        return TopRowFirst(smoothed.Download<byte>(), width, height);
+        if (fxaa)
+        {
+            using GpuFramebuffer smoothedTarget = new(device, "snapshot smoothed", [smoothed]);
+            using (FxaaPass pass = new(device)) pass.Run(resolved, smoothedTarget);
+            finished = smoothed;
+        }
+
+        if (coverage is null) return TopRowFirst(finished.Download<byte>(), width, height);
+        using GpuTexture withAlpha = new(device, "snapshot alpha", GpuFormat.Rgba8, width, height);
+        using GpuFramebuffer alphaTarget = new(device, "snapshot alpha", [withAlpha]);
+        using (CoverageAlphaPass alpha = new(device)) alpha.Apply(finished, coverage, supersample, alphaTarget);
+        return TopRowFirst(withAlpha.Download<byte>(), width, height);
     }
 
     private static T[] Draw<T>(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, int width, int height, Vector4 background, SnapshotScene? scene, GpuFormat format, Func<GpuTexture, T[]> read)
@@ -50,7 +60,7 @@ public static class ModelSnapshot
         return TopRowFirst(read(color), width, height);
     }
 
-    private static void DrawInto(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, Vector4 background, SnapshotScene? scene, GamePostChain? chain = null)
+    private static void DrawInto(GpuDevice device, ModelDrawer drawer, ModelResources model, Camera camera, GpuTexture color, Vector4 background, SnapshotScene? scene, GamePostChain? chain = null, GpuTexture? coverage = null)
     {
         scene ??= new SnapshotScene();
         int width = color.Width, height = color.Height;
@@ -60,6 +70,12 @@ public static class ModelSnapshot
         RenderViewDepth(device, drawer, model, camera, color, viewDepth, world, commands);
         using ViewDepthBuffers views = new(device, width, height);
         views.Resolve(viewDepth, camera);
+        if (coverage is not null)
+        {
+            using GpuFramebuffer maskTarget = new(device, "snapshot coverage", [coverage]);
+            using CoverageAlphaPass mask = new(device);
+            mask.Mask(viewDepth, maskTarget);
+        }
         Dictionary<string, FrameTexture> textures = new(scene.Textures ?? new Dictionary<string, FrameTexture>());
         foreach ((string name, FrameTexture texture) in views.Textures) textures[name] = texture;
         // The game's screen-space occlusion goes in the red channel of the shadow prepass, where its shading programs read it.

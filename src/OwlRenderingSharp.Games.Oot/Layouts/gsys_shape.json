@@ -2,6 +2,7 @@
   "name": "gsys_shape",
   "size": 256,
   "fields": [
+    { "name": "Model", "offset": 0, "type": "Matrix3x4", "evidence": "Vertex stage of program 621 (a rigid shape with no skeleton block): rows 0 to 2 of the block's first three vectors multiply the model-space position into the shape's frame, as the bone rows do for a skinned shape." },
     { "name": "Position", "offset": 64, "type": "Vector4", "evidence": "Vertex slot 4 of program 6183: its xyz is viewed with the context view rows and added to the view-space vertex, so it is the instance position in world space." },
     { "name": "HeightFadeBottom", "offset": 160, "type": "Vector4", "evidence": "Fragment slot 10, .y only, program 6183: subtracted from the height term and from slot 11 to form the divisor of a clamped vertical gradient." },
     { "name": "HeightFadeTop", "offset": 176, "type": "Vector4", "evidence": "Fragment slot 11, .y only: the top of the gradient, so (height - bottom) / (top - bottom)." },

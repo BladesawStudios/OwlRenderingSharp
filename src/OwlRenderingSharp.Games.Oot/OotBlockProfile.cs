@@ -65,17 +65,20 @@ public sealed class OotBlockProfile(OotBlockLayouts layouts, OotEnvironment envi
 
     private static void FillShape(BlockWriter writer, ShapeInfo shape)
     {
+        Matrix4x4[] worlds = BindPose.Worlds(shape.Skeleton);
+        writer.Set("Model", shape.BoneIndex >= 0 && shape.BoneIndex < worlds.Length ? worlds[shape.BoneIndex] : Matrix4x4.Identity);
         writer.Set("Position", new Vector4(shape.World.Translation, 1f));
         writer.Set("HeightFadeBottom", Vector4.Zero).Set("HeightFadeTop", Vector4.One).Set("HeightFadeOffset", Vector4.Zero).Set("HeightFadeBase", Vector4.Zero);
     }
 
     // The shader indexes the palette by the skeleton's matrix number, not by the shape's own list of skin bones.
-    private static int PaletteSize(ShapeInfo shape) => shape.Skeleton.MatrixToBone.Count;
+    private static int PaletteSize(ShapeInfo shape) => Math.Max(1, shape.Skeleton.MatrixToBone.Count);
 
     private static void FillPalette(BlockWriter writer, ShapeInfo shape)
     {
         SkeletonRecord skeleton = shape.Skeleton;
         Matrix4x4[] worlds = BindPose.Worlds(skeleton);
+        if (skeleton.MatrixToBone.Count == 0) writer.Set(OotBlockLayouts.Bone(0), shape.BoneIndex >= 0 && shape.BoneIndex < worlds.Length ? worlds[shape.BoneIndex] : Matrix4x4.Identity);
         for (int i = 0; i < skeleton.MatrixToBone.Count; i++)
         {
             int bone = skeleton.MatrixToBone[i];

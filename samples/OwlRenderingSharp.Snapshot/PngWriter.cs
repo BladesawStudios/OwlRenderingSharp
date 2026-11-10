@@ -8,7 +8,7 @@ public static class PngWriter
 {
     private static readonly uint[] CrcTable = BuildTable();
 
-    public static void Write(string path, int width, int height, ReadOnlySpan<byte> rgba)
+    public static void Write(string path, int width, int height, ReadOnlySpan<byte> rgba, bool keepAlpha = false)
     {
         using MemoryStream raw = new();
         using (ZLibStream zlib = new(raw, CompressionLevel.Fastest, leaveOpen: true))
@@ -17,7 +17,7 @@ public static class PngWriter
             {
                 zlib.WriteByte(0);
                 byte[] row = rgba.Slice(y * width * 4, width * 4).ToArray();
-                for (int x = 3; x < row.Length; x += 4) row[x] = 255;
+                if (!keepAlpha) for (int x = 3; x < row.Length; x += 4) row[x] = 255;
                 zlib.Write(row);
             }
         }

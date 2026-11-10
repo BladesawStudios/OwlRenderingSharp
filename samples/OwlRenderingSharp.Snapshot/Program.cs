@@ -34,7 +34,7 @@ if (gl is null)
 }
 
 byte[] rgba = gl.Run(device => Render(device, content, args[2], width, height));
-PngWriter.Write(args[3], width, height, rgba);
+PngWriter.Write(args[3], width, height, rgba, args.Contains("--transparent"));
 foreach (RenderDiagnostic d in diagnostics.Snapshot()) Console.WriteLine($"{d.Severity}: {d.Message} [{d.Resource}]");
 Console.WriteLine($"wrote {args[3]}");
 return 0;
@@ -180,7 +180,7 @@ byte[] Render(GpuDevice device, ContentSet content, string modelName, int width,
         ? ModelSnapshot.Render(device, drawer, shown, camera, width, height, background, scene)
         : args.Contains("--plain")
             ? FilmicTonemap.ToBytes(ModelSnapshot.RenderHdr(device, drawer, shown, camera, width, height, background, scene), float.Parse(Option("--exposure") ?? "0.25"))
-            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? "0.25")) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"), chain);
+            : ModelSnapshot.RenderSmooth(device, drawer, shown, camera, width, height, background, scene, OotPost.From(profile.Environment.Palette, float.Parse(Option("--exposure") ?? "0.25")) with { BloomIntensity = args.Contains("--no-bloom") ? 0f : OotPost.From(profile.Environment.Palette).BloomIntensity }, int.Parse(Option("--ssaa") ?? "2"), !args.Contains("--no-fxaa"), chain, args.Contains("--transparent"));
     if (shadows is not null)
         for (int c = 0; c < shadows.Cascades.Count; c++)
         {
