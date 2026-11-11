@@ -90,7 +90,8 @@ public static class OotLights
         Vector3 cold = new(tint.X, tint.Y, tint.Z);
         float skyLuma = Vector3.Dot(sky, new Vector3(0.2126f, 0.7152f, 0.0722f)), coldLuma = Math.Max(Vector3.Dot(cold, new Vector3(0.2126f, 0.7152f, 0.0722f)), 1e-3f);
         Vector3 cooled = Vector3.Lerp(sky, cold * (skyLuma / coldLuma), cool);
-        return (cooled, new SkySun(ToSun(environment), Vector3.One * skyLuma * 6f * lobe));
+        // The game's programs look the cube up with the world direction's z negated (the shield's reflection reads vec3(x, y, -z)), so the lobe is stored at the sun's mirrored z to appear where the sun is.
+        return (cooled, new SkySun(ToSun(environment) * new Vector3(1f, 1f, -1f), Vector3.One * skyLuma * 6f * lobe));
     }
 
     // The unit vector from the scene toward the sun, in world space.
