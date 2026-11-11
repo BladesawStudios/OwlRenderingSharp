@@ -25,15 +25,22 @@ public sealed class GpuScreenPass : IDisposable
 
     private readonly GpuDevice _device;
     private readonly GpuProgram _program;
-    private readonly bool _ownsProgram = true;
+    private readonly bool _ownsProgram;
     private readonly GpuVertexArray _vertices;
     private readonly GpuSampler _sampler;
+
+    // The programs of passes built from source, linked once for each device and kept: a pass is made anew for every frame that uses it, and linking its program each time was the cost.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GpuDevice, Dictionary<string, GpuProgram>> Linked = new();
 
     public GpuScreenPass(GpuDevice device, string name, string fragmentSource)
     {
         _device = device;
         Name = name;
-        _program = new GpuProgram(device, name, new Dictionary<GpuShaderStage, string> { [GpuShaderStage.Vertex] = Vertex, [GpuShaderStage.Fragment] = fragmentSource });
+        Dictionary<string, GpuProgram> programs = Linked.GetOrCreateValue(device);
+        string key = name + "\0" + fragmentSource;
+        if (!programs.TryGetValue(key, out GpuProgram? program))
+            programs[key] = program = new GpuProgram(device, name, new Dictionary<GpuShaderStage, string> { [GpuShaderStage.Vertex] = Vertex, [GpuShaderStage.Fragment] = fragmentSource });
+        _program = program;
         _vertices = new GpuVertexArray(device, name);
         _sampler = new GpuSampler(device, name, SamplerState.LinearClamp);
     }
