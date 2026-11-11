@@ -7,7 +7,7 @@ namespace OwlRenderingSharp.Graph;
 /// <see cref="Apply"/> instead multiplies an occlusion image (the game's, from <see cref="SsaoChain"/>) onto the lit image.
 /// This stands in for the game's screen-space occlusion (the compute chain that detects, blurs and merges into the shadow prepass), whose parameter blocks are not decoded. For each pixel it
 /// rebuilds the view-space distance from the hardware depth (near over distance, as the game's programs do), fits the plane of the surface through the pixel from the depth of its neighbours (so a tilted or gently curved surface does not occlude itself, which showed as overlapping circles on skin) and counts how many of a fixed ring of taps within <c>radius</c> metres lie in front of
-/// that plane by more than a small bias that grows with the tap's distance from the pixel (the head's polygons are coarse, and a fixed bias let their facets occlude each other), range-checked so far-away geometry does not darken. The colour is multiplied by
+/// that plane by more than a small bias that grows with the tap's distance from the pixel (the head's polygons and the eyes' are coarse, and a bias that grew more slowly let their facets occlude each other: a surface tilted by about 25 degrees or less no longer counts), range-checked so far-away geometry does not darken. The colour is multiplied by
 /// <c>1 - strength * occlusion</c>. Pixels with no geometry are untouched, and so are skin pixels when the depth of the skin shapes is given: the head's polygons are too coarse for a depth-only occlusion, which printed their facets on the face, and the game's skin takes its occlusion from its textures. It owns its programs and a scratch image and is used from the GL thread only.
 /// </remarks>
 public sealed class AmbientOcclusionPass : IDisposable
@@ -53,7 +53,7 @@ public sealed class AmbientOcclusionPass : IDisposable
                 float sampleZ = viewDistance(pixel + ivec2(offset));
                 float delta = z + dot(slope, offset) - sampleZ;
                 float reach = length(offset) * z / camera.z;
-                occlusion += (delta > settings.z + 0.35 * reach && delta < settings.x * 2.0) ? 1.0 : 0.0;
+                occlusion += (delta > settings.z + 0.45 * reach && delta < settings.x * 2.0) ? 1.0 : 0.0;
             }
             occlusion /= float(taps);
             color = vec4(lit.rgb * (1.0 - settings.y * occlusion), lit.a);
