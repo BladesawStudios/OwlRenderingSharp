@@ -16,6 +16,15 @@ public sealed class GpuDevice(GL gl)
 
     public GL Gl { get; } = gl;
 
+    /// <summary>A folder where linked programs are kept as the driver's own binaries, so a program built before is loaded instead of compiled. Null keeps none.</summary>
+    /// <remarks>A binary only fits the driver and card that made it, so the file names carry them and a binary the driver refuses is compiled again.</remarks>
+    public string? ProgramCacheFolder { get; set; }
+
+    private string? _identity;
+
+    /// <summary>The driver and card, which a program binary is only good for.</summary>
+    public string Identity => _identity ??= $"{Gl.GetStringS(StringName.Vendor)}|{Gl.GetStringS(StringName.Renderer)}|{Gl.GetStringS(StringName.Version)}";
+
     public void Apply(DrawState state) => _applier.Apply(state);
 
     public void Check(string? pass = null, string? resource = null)

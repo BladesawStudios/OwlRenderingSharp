@@ -59,7 +59,8 @@ sealed class Server(Stream input, Stream output) : IDisposable
 
     private void Open(string[] a)
     {
-        string romfs = a[0], cache = a[1], modelFile = a[3], romfsPaths = a.Length > 4 ? a[4] : "", edited = a.Length > 5 ? a[5] : "";
+        // No folder given means the one every Bladesaw renderer shares.
+        string romfs = a[0], cache = a[1].Length > 0 ? a[1] : BfShaderSharp.RenderCache.Folder("owl"), modelFile = a[3], romfsPaths = a.Length > 4 ? a[4] : "", edited = a.Length > 5 ? a[5] : "";
         (string pack, string shaders, string name) = _preparer.Prepare(romfs, cache, modelFile, romfsPaths, edited, Status);
 
         Status("Loading the model");
@@ -68,6 +69,8 @@ sealed class Server(Stream input, Stream output) : IDisposable
         _hiddenMaterials = new HashSet<string>();
         _shapes = null;
         _device ??= CreateDevice();
+        // The driver's compiled programs are kept beside what was prepared, so the GPU compiles each shader once.
+        _device.ProgramCacheFolder = Path.Combine(cache, "gpu");
         _scene = new Scene(_device, _diagnostics, pack, shaders, name, _look);
         // The GPU compiles a shader the first time it is drawn, so each material is drawn once, small, before the model is reported ready.
         Camera camera = new() { Eye = new Vector3(0f, 0f, 3f), Target = Vector3.Zero, Up = Vector3.UnitY, FovRadians = float.DegreesToRadians(30f), NearPlane = 0.1f, FarPlane = 10f };

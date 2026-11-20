@@ -21,6 +21,8 @@ public sealed class GpuProgram : IDisposable
         GL gl = device.Gl;
         List<uint> stages = [];
         _handle = gl.CreateProgram();
+        string? cached = BinaryFile(device, sources);
+        if (cached is not null && TryLoad(gl, cached)) return;
         try
         {
             foreach ((GpuShaderStage stage, string source) in sources)
@@ -30,7 +32,9 @@ public sealed class GpuProgram : IDisposable
                 gl.AttachShader(_handle, shader);
             }
 
+            if (cached is not null) gl.ProgramParameter(_handle, ProgramParameterPName.BinaryRetrievableHint, 1);
             Link(gl, name);
+            if (cached is not null) Save(gl, cached);
         }
         catch
         {
@@ -46,6 +50,62 @@ public sealed class GpuProgram : IDisposable
                 gl.DeleteShader(shader);
             }
         }
+    }
+
+    // The file a program of these sources is kept in: named by the driver and the sources, so a different driver or different code never finds it.
+    private static string? BinaryFile(GpuDevice device, IReadOnlyDictionary<GpuShaderStage, string> sources)
+    {
+        if (device.ProgramCacheFolder is not { } folder) return null;
+        System.Text.StringBuilder text = new(device.Identity);
+        foreach ((GpuShaderStage stage, string source) in sources.OrderBy(s => s.Key)) text.Append('\n').Append((int)stage).Append('\n').Append(source);
+        string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text.ToString())))[..32];
+        return Path.Combine(folder, hash + ".bin");
+    }
+
+    // Loads a kept binary into the program; false when there is none or the driver does not accept it, which leaves the program empty for the sources to be compiled.
+    private unsafe bool TryLoad(GL gl, string file)
+    {
+        try
+        {
+            if (!File.Exists(file)) return false;
+            byte[] data = File.ReadAllBytes(file);
+            if (data.Length <= 4) return false;
+            GLEnum format = (GLEnum)BitConverter.ToUInt32(data, 0);
+            fixed (byte* binary = &data[4]) gl.ProgramBinary(_handle, format, binary, (uint)(data.Length - 4));
+            gl.GetProgram(_handle, ProgramPropertyARB.LinkStatus, out int status);
+            if (status != 0) return true;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+
+        // The driver took it badly: start the program again, and drop the file.
+        gl.GetError();
+        gl.DeleteProgram(_handle);
+        _handle = gl.CreateProgram();
+        try { File.Delete(file); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        return false;
+    }
+
+    private unsafe void Save(GL gl, string file)
+    {
+        try
+        {
+            // An error left in the queue by something earlier is not this call's.
+            for (int i = 0; i < 32 && gl.GetError() != GLEnum.NoError; i++) { }
+            gl.GetProgram(_handle, ProgramPropertyARB.ProgramBinaryLength, out int length);
+            if (length <= 0) return;
+            byte[] data = new byte[length + 4];
+            GLEnum format;
+            uint written;
+            fixed (byte* binary = &data[4]) gl.GetProgramBinary(_handle, (uint)length, out written, out format, binary);
+            if (written == 0 || gl.GetError() != GLEnum.NoError) return;
+            BitConverter.TryWriteBytes(data.AsSpan(0, 4), (uint)format);
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            string temporary = file + "." + Environment.ProcessId + ".tmp";
+            File.WriteAllBytes(temporary, data.AsSpan(0, (int)written + 4).ToArray());
+            File.Move(temporary, file, true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
     }
 
     public string Name { get; }

@@ -14,7 +14,7 @@ while ((line = Console.In.ReadLine()) is not null)
     {
         if (part[0] != "prepare" || part.Length < 6) throw new InvalidOperationException($"Unknown command '{part[0]}'.");
         byte[]? edited = part[4].Length == 0 ? null : File.ReadAllBytes(part[4]);
-        PreparedModel prepared = ModelPreparer.Prepare(part[1], part[2], part[3], part[5].Split('|', StringSplitOptions.RemoveEmptyEntries), edited, new Stages());
+        PreparedModel prepared = ModelPreparer.Prepare(part[1], part[2].Length > 0 ? part[2] : BfShaderSharp.RenderCache.Folder("owl"), part[3], part[5].Split('|', StringSplitOptions.RemoveEmptyEntries), edited, new Stages());
         Console.WriteLine($"RESULT {prepared.Pack}\t{prepared.Shaders}\t{prepared.Name}");
     }
     catch (Exception e) when (e is not OutOfMemoryException)
