@@ -74,6 +74,8 @@ sealed class Server(Stream input, Stream output) : IDisposable
         _scene = new Scene(_device, _diagnostics, pack, shaders, name, _look);
         // The GPU compiles a shader the first time it is drawn, so each material is drawn once, small, before the model is reported ready.
         Camera camera = new() { Eye = new Vector3(0f, 0f, 3f), Target = Vector3.Zero, Up = Vector3.UnitY, FovRadians = float.DegreesToRadians(30f), NearPlane = 0.1f, FarPlane = 10f };
+        Status("Building the game's shaders");
+        _scene.Prefetch();
         while (_scene.Warming)
         {
             Status($"Compiling the game's shaders for your GPU ({_scene.WarmDone} of {_scene.WarmTotal})");

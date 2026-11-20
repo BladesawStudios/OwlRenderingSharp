@@ -91,6 +91,22 @@ sealed class Scene : IDisposable
         };
     }
 
+    /// <summary>Starts building every program the model's materials will ask for (in every pass and for each skin weight count of their shapes), so a driver that compiles in the background builds them all at once and the drawing that follows waits for the slowest, not for each in turn.</summary>
+    public void Prefetch()
+    {
+        ModelRecord record = _content.FindModel(_model.Name) ?? throw new InvalidDataException($"The prepared pack has no model {_model.Name}.");
+        PassProgramSelector selector = new(_content, PassOptions.Standalone);
+        for (int m = 0; m < record.Materials.Count; m++)
+        {
+            MaterialRecord material = _content.Material(record.Materials[m].Material);
+            HashSet<int> skins = [0];
+            foreach (ShapeRef shape in record.Shapes.Where(s => s.MaterialIndex == m)) skins.Add(_content.Shape(shape.Shape).SkinCount);
+            foreach (RenderPass pass in Enum.GetValues<RenderPass>())
+                foreach (int skin in skins)
+                    if (selector.Select(material, pass, skin) is >= 0 and int program) _services.Programs.Get(material.ShaderArchive, material.ShadingModel, program);
+        }
+    }
+
     private int _warmStep;
     private readonly int[] _warmMaterials;
 
