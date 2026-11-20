@@ -40,7 +40,8 @@ public sealed class GpuScreenPass : IDisposable
         string key = name + "\0" + fragmentSource;
         if (!programs.TryGetValue(key, out GpuProgram? program))
             programs[key] = program = new GpuProgram(device, name, new Dictionary<GpuShaderStage, string> { [GpuShaderStage.Vertex] = Vertex, [GpuShaderStage.Fragment] = fragmentSource });
-        _program = program;
+        // A screen pass is used at once, so a program that does not build is refused here, by the name of the pass.
+        _program = program.Wait();
         _vertices = new GpuVertexArray(device, name);
         _sampler = new GpuSampler(device, name, SamplerState.LinearClamp);
     }
@@ -50,7 +51,8 @@ public sealed class GpuScreenPass : IDisposable
     {
         _device = device;
         Name = name;
-        _program = program;
+        // A screen pass is used at once, so a program that does not build is refused here, by the name of the pass.
+        _program = program.Wait();
         _ownsProgram = false;
         _vertices = new GpuVertexArray(device, name);
         _sampler = new GpuSampler(device, name, SamplerState.LinearClamp);

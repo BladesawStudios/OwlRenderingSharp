@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    A render server for tools that want pictures of Ocarina of Time models without linking the renderer: it prepares a model from the romfs (in owl-pack, a process of its own that stays up),
+    draws it offscreen through OwlRenderingSharp and answers each request with an RGBA frame over its standard input and output (see Protocol.cs). A process of its own, so its BfShaderSharp
+    assemblies never meet the host's.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>OwlRenderingSharp.Server</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPackable>false</IsPackable>
+    <Description>Draws Ocarina of Time models offscreen and serves the pictures over standard input and output.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.Windowing" Version="2.23.0" />
+    <PackageReference Include="Silk.NET.Windowing.Glfw" Version="2.23.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OwlRenderingSharp.Games.Oot\OwlRenderingSharp.Games.Oot.csproj" />
+    <ProjectReference Include="..\OwlRenderingSharp.Packing\OwlRenderingSharp.Packing.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <!-- The preparer is built beside this executable as owl-pack, which the preparation runs through. It is a project of its own, so only its output is copied. -->
+  <Target Name="CopyOwlPack" AfterTargets="Build">
+    <PropertyGroup>
+      <_PackOut>$(MSBuildThisFileDirectory)..\OwlRenderingSharp.Packing\bin\$(Configuration)\$(TargetFramework)\</_PackOut>
+    </PropertyGroup>
+    <ItemGroup>
+      <_PackFiles Include="$(_PackOut)**\*" Exclude="$(_PackOut)**\*.pdb;$(_PackOut)**\runtimes\osx*\**;$(_PackOut)**\runtimes\linux*\**;$(_PackOut)**\runtimes\win-x86\**;$(_PackOut)**\runtimes\win-arm64\**" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PackFiles)" DestinationFiles="@(_PackFiles->'$(OutDir)owl-pack\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
