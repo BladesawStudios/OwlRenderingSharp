@@ -5,6 +5,8 @@
     <Project Path="src/OwlRenderingSharp.Gpu/OwlRenderingSharp.Gpu.csproj" />
     <Project Path="src/OwlRenderingSharp.Graph/OwlRenderingSharp.Graph.csproj" />
     <Project Path="src/OwlRenderingSharp.Games.Oot/OwlRenderingSharp.Games.Oot.csproj" />
+    <Project Path="src/OwlRenderingSharp.Packing/OwlRenderingSharp.Packing.csproj" />
+    <Project Path="src/OwlRenderingSharp.Server/OwlRenderingSharp.Server.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/OwlRenderingSharp.Snapshot/OwlRenderingSharp.Snapshot.csproj" />

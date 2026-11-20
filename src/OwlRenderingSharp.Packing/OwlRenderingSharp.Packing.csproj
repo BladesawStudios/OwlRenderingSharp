@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Prepares a model of Ocarina of Time for the renderer, offline: the asset pack of its materials and textures and the cut-down shader archive of just the programs it uses, both kept in a
+    cache folder. A process of its own that stays up between models (see Program.cs), so the second model is prepared by code that is already compiled.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>owl-pack</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <Description>Prepares Ocarina of Time models for OwlRenderingSharp.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OwlRenderingSharp.Graph\OwlRenderingSharp.Graph.csproj" />
+    <ProjectReference Include="..\..\vendor\BfShaderSharp\src\BfShaderSharp.Assets\BfShaderSharp.Assets.csproj" />
+    <ProjectReference Include="..\..\vendor\BfShaderSharp\src\BfShaderSharp.Preparation\BfShaderSharp.Preparation.csproj" />
+    <ProjectReference Include="..\..\vendor\BfShaderSharp\lib\vendor\BfresSharp\lib\vendor\McSharp\src\McSharp\McSharp.csproj" />
+    <ProjectReference Include="..\..\vendor\BfShaderSharp\lib\vendor\BfresSharp\lib\vendor\Yaz0Sharp\src\Yaz0Sharp\Yaz0Sharp.csproj" />
+  </ItemGroup>
+
+</Project>
