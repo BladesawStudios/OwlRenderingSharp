@@ -48,7 +48,7 @@ public class GpuProgramTests(GlFixture gl)
     public void ACompileErrorNamesTheProgramAndShowsTheLine()
     {
         GpuException error = Assert.Throws<GpuException>(() => gl.Require().Run(device =>
-            new GpuProgram(device, "broken", Sources(Fragment.Replace("color = tint;", "color = nothing;")))));
+            new GpuProgram(device, "broken", Sources(Fragment.Replace("color = tint;", "color = nothing;"))).Wait()));
         Assert.Equal("broken", error.Resource);
         Assert.Contains("Fragment stage did not compile", error.Message);
         Assert.Contains("color = nothing;", error.Message);

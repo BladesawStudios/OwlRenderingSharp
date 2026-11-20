@@ -151,6 +151,13 @@ public sealed class GpuProgram : IDisposable
 
     public string Name { get; }
 
+    /// <summary>Waits for the program to be built if it still is being, and throws what was wrong with it (the stage that did not compile, or the link log). Everything that uses the program does this itself; this is for a caller that wants the error now.</summary>
+    public GpuProgram Wait()
+    {
+        Finish();
+        return this;
+    }
+
     /// <summary>The GL program; asking waits for it to be built if it is still being.</summary>
     public uint Handle
     {
